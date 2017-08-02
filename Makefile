@@ -1,3 +1,5 @@
+PATH        := ./node_modules/.bin:${PATH}
+
 NPM_PACKAGE := $(shell node -e 'process.stdout.write(require("./package.json").name)')
 NPM_VERSION := $(shell node -e 'process.stdout.write(require("./package.json").version)')
 
@@ -10,30 +12,40 @@ CURR_HEAD   := $(firstword $(shell git show-ref --hash HEAD | cut -b -6) master)
 GITHUB_PROJ := https://github.com//markdown-it/${NPM_PACKAGE}
 
 
+build: lint browserify test todo
+
 lint:
-	./node_modules/.bin/eslint .
+	eslint .
 
 test: lint
-	./node_modules/.bin/mocha -R spec
+	mocha
 
 coverage:
-	rm -rf coverage
-	./node_modules/.bin/istanbul cover node_modules/.bin/_mocha
+	-rm -rf coverage
+	istanbul cover node_modules/mocha/bin/_mocha
 
-test-ci: lint
-	istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage
+report-coverage: coverage
 
 browserify:
-	rm -rf ./dist
+	-rm -rf ./dist
 	mkdir dist
 	# Browserify
 	( printf "/*! ${NPM_PACKAGE} ${NPM_VERSION} ${GITHUB_PROJ} @license MIT */" ; \
-		./node_modules/.bin/browserify ./ -s markdownitFootnote \
+		browserify ./ -s markdownitFootnote \
 		) > dist/markdown-it-footnote.js
+
+minify: browserify
 	# Minify
-	./node_modules/.bin/uglifyjs dist/markdown-it-footnote.js -b beautify=false,ascii-only=true -c -m \
+	uglifyjs dist/markdown-it-footnote.js -b beautify=false,ascii-only=true -c -m \
 		--preamble "/*! ${NPM_PACKAGE} ${NPM_VERSION} ${GITHUB_PROJ} @license MIT */" \
 		> dist/markdown-it-footnote.min.js
 
-.PHONY: lint test coverage
-.SILENT: lint test
+todo:
+	@echo ""
+	@echo "TODO list"
+	@echo "---------"
+	@echo ""
+	grep 'TODO' -n -r ./lib 2>/dev/null || test true
+
+.PHONY: lint test report-coverage coverage build browserify minify todo
+.SILENT: lint test todo

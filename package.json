@@ -11,18 +11,19 @@
   "repository": "markdown-it/markdown-it-footnote",
   "license": "MIT",
   "scripts": {
+    "build": "make",
     "test": "make test"
   },
   "devDependencies": {
-    "browserify": "*",
-    "coveralls": "^2.11.2",
-    "eslint": "~2.13.1",
-    "istanbul": "*",
-    "lodash": "*",
-    "markdown-it": "markdown-it/markdown-it",
-    "markdown-it-testgen": "~0.1.0",
-    "mocha": "*",
-    "request": "*",
-    "uglify-js": "*"
+    "browserify": "14.4.0",
+    "coveralls": "2.13.1",
+    "eslint": "4.3.0",
+    "istanbul": "0.4.5",
+    "lodash": "4.17.4",
+    "markdown-it": "GerHobbelt/markdown-it#master",
+    "markdown-it-testgen": "0.1.4",
+    "mocha": "3.5.0",
+    "request": "2.81.0",
+    "uglify-js": "3.0.27"
   }
 }
