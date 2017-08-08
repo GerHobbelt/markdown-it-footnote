@@ -1,6 +1,6 @@
 {
-  "name": "markdown-it-footnote",
-  "version": "3.0.1",
+  "name": "js-slate-markdown-anchor-serializer",
+  "version": "1.0.0",
   "description": "Footnotes for markdown-it markdown parser.",
   "keywords": [
     "markdown-it-plugin",
@@ -24,5 +24,8 @@
     "mocha": "*",
     "request": "*",
     "uglify-js": "*"
+  },
+  "dependencies": {
+    "@opuscapita/npm-scripts": "^2.0.0"
   }
 }
