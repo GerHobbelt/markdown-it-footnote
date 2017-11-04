@@ -1,8 +1,8 @@
 # markdown-it-footnote
 
-[![Build Status](https://img.shields.io/travis/markdown-it/markdown-it-footnote/master.svg?style=flat)](https://travis-ci.org/markdown-it/markdown-it-footnote)
-[![NPM version](https://img.shields.io/npm/v/markdown-it-footnote.svg?style=flat)](https://www.npmjs.org/package/markdown-it-footnote)
-[![Coverage Status](https://img.shields.io/coveralls/markdown-it/markdown-it-footnote/master.svg?style=flat)](https://coveralls.io/r/markdown-it/markdown-it-footnote?branch=master)
+[![Build Status](https://img.shields.io/travis/GerHobbelt/markdown-it-footnote/master.svg?style=flat)](https://travis-ci.org/GerHobbelt/markdown-it-footnote)
+[![NPM version](https://img.shields.io/npm/v/@gerhobbelt/markdown-it-footnote.svg?style=flat)](https://www.npmjs.org/package/@gerhobbelt/markdown-it-footnote)
+[![Coverage Status](https://img.shields.io/coveralls/GerHobbelt/markdown-it-footnote/master.svg?style=flat)](https://coveralls.io/r/GerHobbelt/markdown-it-footnote?branch=master)
 
 > Footnotes plugin for [markdown-it](https://github.com/markdown-it/markdown-it) markdown parser.
 
@@ -71,17 +71,17 @@ note. <a href="#fnref1" class="footnote-backref">↩</a></p>
 node.js, browser:
 
 ```bash
-npm install markdown-it-footnote --save
-bower install markdown-it-footnote --save
+npm install @gerhobbelt/markdown-it-footnote --save
+bower install @gerhobbelt/markdown-it-footnote --save
 ```
 
 ## Use
 
 ```js
-var md = require('markdown-it')()
-            .use(require('markdown-it-footnote'));
+var md = require('@gerhobbelt/markdown-it')()
+            .use(require('@gerhobbelt/markdown-it-footnote'));
 
-md.render(/*...*/) // See examples above
+md.render(/*...*/); // See examples above
 ```
 
 _Differences in browser._ If you load script directly into the page, without
@@ -90,4 +90,4 @@ package system, module will add itself globally as `window.markdownitFootnote`.
 
 ## License
 
-[MIT](https://github.com/markdown-it/markdown-it-footnote/blob/master/LICENSE)
+[MIT](https://github.com/GerHobbelt/markdown-it-footnote/blob/master/LICENSE)
