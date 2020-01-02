@@ -22,10 +22,7 @@ function render_footnote_caption(tokens, idx/*, options, env, slf*/) {
     n += ':' + tokens[idx].meta.subId;
   }
 
-  var caption = new String('[' + n + ']');
-  if (tokens[idx].meta.text) { caption.text = tokens[idx].meta.text; }
-
-  return caption;
+  return '[' + n + ']';
 }
 
 function render_footnote_ref(tokens, idx, options, env, slf) {
@@ -37,8 +34,10 @@ function render_footnote_ref(tokens, idx, options, env, slf) {
     refid += ':' + tokens[idx].meta.subId;
   }
 
-  if (caption.text) {
-    return '<a href="#fn' + id + '" id="fnref' + refid + '">' + caption.text + '<sup class="footnote-ref">' + caption + '</sup></a>';
+  if (tokens[idx].meta.text) {
+    return '<a href="#fn' + id + '" id="fnref' + refid + '">' +
+            tokens[idx].meta.text +
+            '<sup class="footnote-ref">' + caption + '</sup></a>';
   }
 
   return '<sup class="footnote-ref"><a href="#fn' + id + '" id="fnref' + refid + '">' + caption + '</a></sup>';
@@ -258,10 +257,10 @@ module.exports = function footnote_plugin(md) {
     pos++;
 
     label = state.src.slice(start + 2, pos - 1);
-    if ( !label || !label.match(/^(\d+) (.+)/) ) { return false; }
+    if (!label || !label.match(/^(\d+) (.+)/)) { return false; }
     label = RegExp.$1;
     var text = RegExp.$2;
-    
+
     if (typeof state.env.footnotes.refs[':' + label] === 'undefined') { return false; }
 
     if (!silent) {

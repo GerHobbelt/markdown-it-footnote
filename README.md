@@ -57,11 +57,10 @@ html:
 
 ```html
 <p>Here is a footnote reference with <a href="#fn1" id="fnref1">added text<sup class="footnote-ref">[1]</sup></a>.</p>
-
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn1"  class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
+<li id="fn1" class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
 </li>
 </ol>
 </section>
