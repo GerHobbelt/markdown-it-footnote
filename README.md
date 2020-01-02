@@ -42,6 +42,31 @@ belong to the previous footnote. <a href="#fnref2" class="footnote-backref">↩<
 </section>
 ```
 
+__Footnote with added text__:
+
+This fork adds support for footnote references having additional text content. To be recognised the footnote reference must follow the pattern of `[^n ...]` where _n_ is one or more numeric digits which are followed by a space and then the added text. You might prefer to use this style of reference to enhance usability in certain accessibility scenarios: when a screen reader user is navigating a document as an extracted list of links for example, it is more useful that they hear the link described as "added text [1]" rather than just "[1]".
+
+
+```
+Here is a footnote reference with [^1 added text].
+
+[^1]: Here is the footnote.
+```
+
+html:
+
+```html
+<p>Here is a footnote reference with <a href="#fn1" id="fnref1">added text<sup class="footnote-ref">[1]</sup></a>.</p>
+
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1"  class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
+</li>
+</ol>
+</section>
+```
+
 __Inline footnote__:
 
 ```
