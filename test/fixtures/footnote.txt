@@ -266,17 +266,43 @@ Example^[this is another example https://github.com]
 .
 
 
-Should allow additional text in footnote reference
+Should allow additional text in numeric footnote reference
 .
-Here is a footnote reference with [^1 added text].
+Here is a footnote[^1] reference with [^2 added text].
 
-[^1]: Here is the footnote.
+[^1]: Here is a footnote.
+[^2]: Here is another footnote.
 .
-<p>Here is a footnote reference with <a href="#fn1" id="fnref1">added text<sup class="footnote-ref">[1]</sup></a>.</p>
+<p>Here is a footnote<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> reference with <a href="#fn2" id="fnref2">added text<sup class="footnote-ref">[2]</sup></a>.</p>
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn1" class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
+<li id="fn1" class="footnote-item"><p>Here is a footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
+</li>
+<li id="fn2" class="footnote-item"><p>Here is another footnote. <a href="#fnref2" class="footnote-backref">↩</a></p>
+</li>
+</ol>
+</section>
+.
+
+
+Should allow additional text in long footnote reference
+.
+Here[^anote] is a footnote [^Bnote reference] with [^c-note added text].
+
+[^anote]: Here is the first footnote.
+[^Bnote]: Here is the second footnote.
+[^c-note]: Here is the third footnote.
+.
+<p>Here<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> is a footnote <a href="#fn2" id="fnref2">reference<sup class="footnote-ref">[2]</sup></a> with <a href="#fn3" id="fnref3">added text<sup class="footnote-ref">[3]</sup></a>.</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>Here is the first footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn2" class="footnote-item"><p>Here is the second footnote. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn3" class="footnote-item"><p>Here is the third footnote. <a href="#fnref3" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>

@@ -44,8 +44,7 @@ belong to the previous footnote. <a href="#fnref2" class="footnote-backref">↩<
 
 __Footnote with added text__:
 
-This fork adds support for footnote references having additional text content. To be recognised the footnote reference must follow the pattern of `[^n ...]` where _n_ is one or more numeric digits which are followed by a space and then the added text. You might prefer to use this style of reference to enhance usability in certain accessibility scenarios: when a screen reader user is navigating a document as an extracted list of links for example, it is more useful that they hear the link described as "added text [1]" rather than just "[1]".
-
+This fork adds support for footnote references having additional text content. This type of footnote reference follows the pattern of `[^l ...]` where _l_ is a one-word label, followed by a space and then some additional text. You might prefer to use this way of referencing a footnote in order to enhance usability in certain accessibility scenarios: when a screen reader user is navigating a document as list of links for example (where the links are presented separately from the surrounding document) it is more useful to hear the footnote link described as "added text [1]" rather than just "[1]".
 
 ```
 Here is a footnote reference with [^1 added text].

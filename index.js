@@ -108,7 +108,7 @@ module.exports = function footnote_plugin(md) {
     if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) { return false; }
 
     for (pos = start + 2; pos < max; pos++) {
-      if (state.src.charCodeAt(pos) === 0x20) { return false; }
+      if (state.src.charCodeAt(pos) === 0x20 /* space */) { return false; }
       if (state.src.charCodeAt(pos) === 0x5D /* ] */) {
         break;
       }
@@ -228,7 +228,7 @@ module.exports = function footnote_plugin(md) {
     return true;
   }
 
-  // Process footnote references with text ([^n ...])
+  // Process footnote references with text ([^label ...])
   function footnote_ref_with_text(state, silent) {
     var label,
         pos,
@@ -238,7 +238,7 @@ module.exports = function footnote_plugin(md) {
         max = state.posMax,
         start = state.pos;
 
-    // should be at least 6 chars - "[^n x]"
+    // should be at least 6 chars - "[^l x]"
     if (start + 5 > max) { return false; }
 
     if (!state.env.footnotes || !state.env.footnotes.refs) { return false; }
@@ -246,7 +246,7 @@ module.exports = function footnote_plugin(md) {
     if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) { return false; }
 
     for (pos = start + 2; pos < max; pos++) {
-      if (state.src.charCodeAt(pos) === 0x0A /*linefeed */) { return false; }
+      if (state.src.charCodeAt(pos) === 0x0A /* linefeed */) { return false; }
       if (state.src.charCodeAt(pos) === 0x5D /* ] */) {
         break;
       }
@@ -257,7 +257,7 @@ module.exports = function footnote_plugin(md) {
     pos++;
 
     label = state.src.slice(start + 2, pos - 1);
-    if (!label || !label.match(/^(\d+) (.+)/)) { return false; }
+    if (!label || !label.match(/^(\S+)\s+(.+)$/)) { return false; }
     label = RegExp.$1;
     var text = RegExp.$2;
 
