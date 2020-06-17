@@ -1,12 +1,9 @@
-'use strict';
+/* eslint-env mocha, es6 */
 
-
-var _        = require('lodash');
-var assert   = require('assert');
-var testgen  = require('@gerhobbelt/markdown-it-testgen');
-var path     = require('path');
-
-/*eslint-env mocha*/
+let _        = require('lodash');
+let assert   = require('assert');
+let testgen  = require('@gerhobbelt/markdown-it-testgen');
+let path     = require('path');
 
 // Most of the rest of this is inlined from generate(), but modified
 // so we can pass in an `env` object
@@ -14,7 +11,7 @@ function generate(fixturePath, md, env) {
   testgen.load(fixturePath, {}, function (data) {
     data.meta = data.meta || {};
 
-    var desc = data.meta.desc || path.relative(fixturePath, data.file);
+    let desc = data.meta.desc || path.relative(fixturePath, data.file);
 
     (data.meta.skip ? describe.skip : describe)(desc, function () {
       data.fixtures.forEach(function (fixture) {
@@ -33,14 +30,14 @@ function generate(fixturePath, md, env) {
 
 
 describe('footnote.txt', function () {
-  var md = require('@gerhobbelt/markdown-it')().use(require('../'));
+  let md = require('@gerhobbelt/markdown-it')().use(require('../'));
 
   // Check that defaults work correctly
   generate(path.join(__dirname, 'fixtures/footnote.txt'), md);
 });
 
 describe('custom docId in env', function () {
-  var md = require('@gerhobbelt/markdown-it')().use(require('../'));
+  let md = require('@gerhobbelt/markdown-it')().use(require('../'));
 
   // Now check that using `env.documentId` works to prefix IDs
   generate(path.join(__dirname, 'fixtures/footnote-prefixed.txt'), md, { docId: 'test-doc-id' });

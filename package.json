@@ -10,21 +10,39 @@
   ],
   "repository": "GerHobbelt/markdown-it-footnote",
   "license": "MIT",
-  "main": "index.js",
+  "source": "index.js",
+  "main": "dist/markdownItAbbr.js",
+  "module": "dist/markdownItAbbr.mjs",
+  "engines": {
+    "node": ">=10"
+  },
   "scripts": {
-    "test": "make test",
     "build": "make",
+    "test": "make test",
+    "todo": "make todo",
+    "clean": "make clean",
+    "superclean": "make superclean",
+    "doc": "make doc",
+    "lint": "make lint",
+    "lintfix": "make lintfix",
+    "cov": "make report-coverage",
     "pub": "npm publish --access public"
   },
   "devDependencies": {
-    "browserify": "14.5.0",
-    "eslint": "4.10.0",
-    "istanbul": "0.4.5",
-    "lodash": "4.17.4",
-    "@gerhobbelt/markdown-it": "8.4.0-16",
-    "@gerhobbelt/markdown-it-testgen": "0.1.5-5",
-    "mocha": "4.0.1",
-    "request": "2.83.0",
-    "uglify-js": "3.1.6"
-  }
+    "@gerhobbelt/markdown-it": "11.0.0-36",
+    "@gerhobbelt/markdown-it-testgen": "0.1.6-7",
+    "@gerhobbelt/prepend-header": "1.0.8-3",
+    "camelcase": "6.0.0",
+    "chai": "4.2.0",
+    "cross-env": "7.0.2",
+    "eslint": "7.2.0",
+    "microbundle": "0.12.1",
+    "mocha": "8.0.1",
+    "nyc": "15.1.0"
+  },
+  "reporter": [
+    "lcov",
+    "text",
+    "text-summary"
+  ]
 }
