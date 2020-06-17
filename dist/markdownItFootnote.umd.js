@@ -1,4 +1,4 @@
-/*! markdown-it-footnote 3.0.2-3 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
+/*! markdown-it-footnote 3.0.2-5 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
 
 (function (factory) {
   typeof define === 'function' && define.amd ? define(factory) :
