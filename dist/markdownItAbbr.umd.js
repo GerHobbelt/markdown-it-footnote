@@ -266,6 +266,7 @@
           id: footnoteId
         };
         state.env.footnotes.list[footnoteId] = {
+          content: state.src.slice(labelStart, labelEnd),
           tokens: tokens
         };
       }
@@ -432,7 +433,7 @@
           tokens.push(token);
           token = new state.Token('inline', '', 0);
           token.children = list[i].tokens;
-          token.content = '';
+          token.content = list[i].content;
           tokens.push(token);
           token = new state.Token('paragraph_close', 'p', -1);
           token.block = true;

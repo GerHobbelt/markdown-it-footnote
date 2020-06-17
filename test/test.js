@@ -1,6 +1,5 @@
 /* eslint-env mocha, es6 */
 
-let _        = require('lodash');
 let assert   = require('assert');
 let testgen  = require('@gerhobbelt/markdown-it-testgen');
 let path     = require('path');
@@ -19,7 +18,7 @@ function generate(fixturePath, md, env) {
           // add variant character after "↩", so we don't have to worry about
           // invisible characters in tests
           assert.strictEqual(
-            md.render(fixture.first.text, _.clone(env || {})),
+            md.render(fixture.first.text, Object.assign({}, env || {})),
             fixture.second.text.replace(/\u21a9(?!\ufe0e)/g, '\u21a9\ufe0e')
           );
         });
@@ -30,7 +29,7 @@ function generate(fixturePath, md, env) {
 
 
 describe('footnote.txt', function () {
-  let md = require('@gerhobbelt/markdown-it')().use(require('../'));
+  let md = require('@gerhobbelt/markdown-it')({ linkify: true }).use(require('../'));
 
   // Check that defaults work correctly
   generate(path.join(__dirname, 'fixtures/footnote.txt'), md);
