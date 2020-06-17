@@ -37,3 +37,45 @@ multi-paragraph list items. <a href="#fnref-test-doc-id-2" class="footnote-backr
 </ol>
 </section>
 .
+
+
+Duplicate footnotes:
+.
+[^xxxxx] [^xxxxx]
+
+[^xxxxx]: foo
+.
+<p><sup class="footnote-ref"><a href="#fn-test-doc-id-1" id="fnref-test-doc-id-1">[1]</a></sup> <sup class="footnote-ref"><a href="#fn-test-doc-id-1" id="fnref-test-doc-id-1:1">[1:1]</a></sup></p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn-test-doc-id-1" class="footnote-item"><p>foo <a href="#fnref-test-doc-id-1" class="footnote-backref">↩︎</a> <a href="#fnref-test-doc-id-1:1" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+.
+
+
+
+They could terminate each other:
+
+.
+[^1][^2][^3]
+
+[^1]: foo
+[^2]: bar
+[^3]: baz
+.
+<p><sup class="footnote-ref"><a href="#fn-test-doc-id-1" id="fnref-test-doc-id-1">[1]</a></sup><sup class="footnote-ref"><a href="#fn-test-doc-id-2" id="fnref-test-doc-id-2">[2]</a></sup><sup class="footnote-ref"><a href="#fn-test-doc-id-3" id="fnref-test-doc-id-3">[3]</a></sup></p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn-test-doc-id-1" class="footnote-item"><p>foo <a href="#fnref-test-doc-id-1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn-test-doc-id-2" class="footnote-item"><p>bar <a href="#fnref-test-doc-id-2" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn-test-doc-id-3" class="footnote-item"><p>baz <a href="#fnref-test-doc-id-3" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+.

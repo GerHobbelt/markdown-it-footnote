@@ -3,6 +3,8 @@ Custom ids/captions example:
 .
 Here is a footnote reference,[^1] and another,[^longnote] and an inline footnote ^[it works!].
 
+And then there are duplicate references to those footnotes here[^1][^longnote].
+
 [^1]: Here is the footnote.
 
 [^longnote]: Here's one with multiple blocks.
@@ -11,6 +13,7 @@ Here is a footnote reference,[^1] and another,[^longnote] and an inline footnote
 belong to the previous footnote.
 .
 <p>Here is a footnote reference,<sup class="footnote-ref"><a href="#fn-1" id="fnref-1">{1}</a></sup> and another,<sup class="footnote-ref"><a href="#fn-longnote" id="fnref-longnote">{longnote}</a></sup> and an inline footnote <sup class="footnote-ref"><a href="#fn3" id="fnref3">{3}</a></sup>.</p>
+<p>And then there are duplicate references to those footnotes here<sup class="footnote-ref"><a href="#fn-1" id="fnref-1:1">{1}</a></sup><sup class="footnote-ref"><a href="#fn-longnote" id="fnref-longnote:1">{longnote}</a></sup>.
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">

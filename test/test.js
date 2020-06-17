@@ -41,3 +41,23 @@ describe('custom docId in env', function () {
   // Now check that using `env.documentId` works to prefix IDs
   generate(path.join(__dirname, 'fixtures/footnote-prefixed.txt'), md, { docId: 'test-doc-id' });
 });
+
+describe('custom footnote ids and labels', function () {
+  let md = require('@gerhobbelt/markdown-it')().use(require('../'), {
+    anchor: function (n, tokens, idx, options, env, slf) {
+      let token = tokens[idx];
+      if (token.meta.label) {
+        return '-' + token.meta.label;
+      }
+      return n;
+    },
+
+    caption: function (n, tokens, idx, options, env, slf) {
+      let token = tokens[idx];
+
+      return '{' + (token.meta.label || n) + '}';
+    }
+  });
+
+  generate(path.join(__dirname, 'fixtures/custom-footnotes.txt'), md);
+});
