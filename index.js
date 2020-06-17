@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Renderer partials
 
-function anchorFnDefault(n, tokens, idx, options, env, slf) {
+function anchorFnDefault(n, excludeSubId, tokens, idx, options, env, slf) {
   let prefix = '';
   if (typeof env.docId === 'string' && env.docId.length > 0) {
     prefix = '-' + env.docId + '-';
@@ -42,12 +42,11 @@ module.exports = function footnote_plugin(md, plugin_options) {
 
   function render_footnote_anchor_name(tokens, idx, options, env, slf) {
     let n = render_footnote_n(tokens, idx, true);
-    return anchorFn(n, tokens, idx, options, env, slf);
+    return anchorFn(n, true, tokens, idx, options, env, slf);
   }
 
   function render_footnote_caption(tokens, idx, options, env, slf) {
     let n = render_footnote_n(tokens, idx);
-
     return captionFn(n, tokens, idx, options, env, slf);
   }
 
@@ -55,6 +54,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
     let id      = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf);
     let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
     let refid   = render_footnote_n(tokens, idx);
+    refid = anchorFn(refid, false, tokens, idx, options, env, slf);
 
     return '<sup class="footnote-ref"><a href="#fn' + id + '" id="fnref' + refid + '">' + caption + '</a></sup>';
   }
@@ -89,8 +89,9 @@ module.exports = function footnote_plugin(md, plugin_options) {
 
   function render_footnote_anchor(tokens, idx, options, env, slf) {
     let refid = render_footnote_n(tokens, idx);
+    refid = anchorFn(refid, false, tokens, idx, options, env, slf);
 
-  /* ↩ with escape code to prevent display as Apple Emoji on iOS */
+    /* ↩ with escape code to prevent display as Apple Emoji on iOS */
     return ' <a href="#fnref' + refid + '" class="footnote-backref">\u21a9\uFE0E</a>';
   }
 

@@ -44,10 +44,13 @@ describe('custom docId in env', function () {
 
 describe('custom footnote ids and labels', function () {
   let md = require('@gerhobbelt/markdown-it')().use(require('../'), {
-    anchor: function (n, tokens, idx, options, env, slf) {
+    anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
       let token = tokens[idx];
       if (token.meta.label) {
-        return '-' + token.meta.label;
+        n = '-' + token.meta.label;
+      }
+      if (!excludeSubId && token.meta.subId > 0) {
+        n += '~' + token.meta.subId;
       }
       return n;
     },
