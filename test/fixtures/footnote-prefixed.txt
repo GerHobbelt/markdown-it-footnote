@@ -23,7 +23,7 @@ isn't indented.</p>
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn-test-doc-id-1" class="footnote-item"><p>Here is the footnote. <a href="#fnref-test-doc-id-1" class="footnote-backref">↩</a></p>
+<li id="fn-test-doc-id-1" class="footnote-item"><p>Here is the footnote. <a href="#fnref-test-doc-id-1" class="footnote-backref">↩︎</a></p>
 </li>
 <li id="fn-test-doc-id-2" class="footnote-item"><p>Here's one with multiple blocks.</p>
 <p>Subsequent paragraphs are indented to show that they
@@ -32,7 +32,7 @@ belong to the previous footnote.</p>
 </code></pre>
 <p>The whole paragraph can be indented, or just the first
 line.  In this way, multi-paragraph footnotes work like
-multi-paragraph list items. <a href="#fnref-test-doc-id-2" class="footnote-backref">↩</a></p>
+multi-paragraph list items. <a href="#fnref-test-doc-id-2" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>
