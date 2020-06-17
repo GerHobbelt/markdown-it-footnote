@@ -27,6 +27,8 @@ function headerFnDefault(state) {
 module.exports = function footnote_plugin(md, plugin_options) {
   let parseLinkLabel = md.helpers.parseLinkLabel,
       isSpace = md.utils.isSpace;
+  plugin_options = plugin_options || {};
+  plugin_options.atDocumentEnd = typeof plugin_options.atDocumentEnd === 'undefined' ? true : plugin_options.atDocumentEnd;
   let anchorFn = plugin_options && plugin_options.anchor ? plugin_options.anchor : anchorFnDefault;
   let captionFn = plugin_options && plugin_options.caption ? plugin_options.caption : captionFnDefault;
   let headerFn = plugin_options && plugin_options.header ? plugin_options.header : headerFnDefault;
@@ -396,6 +398,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
         tokens,
         current,
         currentLabel,
+        lastRefIndex = 0,
         insideRef = false,
         refTokens = {};
 
@@ -403,7 +406,8 @@ module.exports = function footnote_plugin(md, plugin_options) {
       return;
     }
 
-    state.tokens = state.tokens.filter(function (tok) {
+    let oldLen = state.tokens.length;
+    state.tokens = state.tokens.filter(function (tok, idx) {
       if (tok.type === 'footnote_reference_open') {
         insideRef = true;
         current = [];
@@ -415,6 +419,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
         insideRef = false; // prepend ':' to avoid conflict with Object.prototype members
 
         refTokens[':' + currentLabel] = current;
+        lastRefIndex = idx;
         return false;
       }
 
@@ -424,6 +429,8 @@ module.exports = function footnote_plugin(md, plugin_options) {
 
       return !insideRef;
     });
+    lastRefIndex = plugin_options.atDocumentEnd ? state.tokens.length : lastRefIndex - (oldLen - state.tokens.length - 1);
+    let firstHalfTokens = state.tokens.slice(0, lastRefIndex);
 
     if (!state.env.footnotes.list) {
       return;
@@ -432,7 +439,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
     list = state.env.footnotes.list;
     token = new state.Token('footnote_block_open', '', 1);
     token.markup = headerFn(state);
-    state.tokens.push(token);
+    firstHalfTokens.push(token);
 
     for (i = 0, l = list.length; i < l; i++) {
       token = new state.Token('footnote_open', '', 1);
@@ -440,7 +447,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
         id: i,
         label: list[i].label
       };
-      state.tokens.push(token);
+      firstHalfTokens.push(token);
 
       if (list[i].tokens) {
         tokens = [];
@@ -458,10 +465,10 @@ module.exports = function footnote_plugin(md, plugin_options) {
         tokens = refTokens[':' + list[i].label];
       }
 
-      state.tokens = state.tokens.concat(tokens);
+      firstHalfTokens = firstHalfTokens.concat(tokens);
 
-      if (state.tokens[state.tokens.length - 1].type === 'paragraph_close') {
-        lastParagraph = state.tokens.pop();
+      if (firstHalfTokens[firstHalfTokens.length - 1].type === 'paragraph_close') {
+        lastParagraph = firstHalfTokens.pop();
       } else {
         lastParagraph = null;
       }
@@ -475,19 +482,20 @@ module.exports = function footnote_plugin(md, plugin_options) {
           subId: j,
           label: list[i].label
         };
-        state.tokens.push(token);
+        firstHalfTokens.push(token);
       }
 
       if (lastParagraph) {
-        state.tokens.push(lastParagraph);
+        firstHalfTokens.push(lastParagraph);
       }
 
       token = new state.Token('footnote_close', '', -1);
-      state.tokens.push(token);
+      firstHalfTokens.push(token);
     }
 
     token = new state.Token('footnote_block_close', '', -1);
-    state.tokens.push(token);
+    firstHalfTokens.push(token);
+    state.tokens = firstHalfTokens.concat(state.tokens.slice(lastRefIndex));
   }
 
   md.block.ruler.before('reference', 'footnote_def', footnote_def, {
