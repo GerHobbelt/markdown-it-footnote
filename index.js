@@ -80,7 +80,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
   }
 */
 
-  return '<li tabindex="-1" id="fn' + id + '" class="footnote-item">';
+    return '<li tabindex="-1" id="fn' + id + '" class="footnote-item">';
   }
 
   function render_footnote_close() {
