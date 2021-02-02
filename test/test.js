@@ -24,7 +24,7 @@ function generate(fixturePath, md, env) {
 
     (data.meta.skip ? describe.skip : describe)(desc, function () {
       data.fixtures.forEach(function (fixture) {
-        it('line ' + (fixture.first.range[0] - 1), function () {
+        it(fixture.header + ' [#' + (fixture.first.range[0] - 1) + ']', function () {
           // add variant character after "↩", so we don't have to worry about
           // invisible characters in tests
           assert.strictEqual(
