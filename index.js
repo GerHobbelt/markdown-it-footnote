@@ -55,12 +55,12 @@ export default function footnote_plugin(md, plugin_options) {
     let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
     let refid   = render_footnote_n(tokens, idx);
     refid = anchorFn(refid, false, tokens, idx, options, env, slf);
-    
-  if (tokens[idx].meta.text) {
-    return '<a href="#fn' + id + '" id="fnref' + refid + '">' +
+
+    if (tokens[idx].meta.text) {
+      return '<a href="#fn' + id + '" id="fnref' + refid + '">' +
             tokens[idx].meta.text +
             '<sup class="footnote-ref">' + caption + '</sup></a>';
-  }
+    }
 
     return '<sup class="footnote-ref"><a href="#fn' + id + '" id="fnref' + refid + '">' + caption + '</a></sup>';
   }
@@ -255,7 +255,7 @@ export default function footnote_plugin(md, plugin_options) {
 
   // Process footnote references with text ([^label ...])
   function footnote_ref_with_text(state, silent) {
-    var label,
+    let label,
         pos,
         footnoteId,
         footnoteSubId,
@@ -284,7 +284,7 @@ export default function footnote_plugin(md, plugin_options) {
     label = state.src.slice(start + 2, pos - 1);
     if (!label || !label.match(/^(\S+)\s+(.+)$/)) { return false; }
     label = RegExp.$1;
-    var text = RegExp.$2;
+    let text = RegExp.$2;
 
     if (typeof state.env.footnotes.refs[':' + label] === 'undefined') { return false; }
 

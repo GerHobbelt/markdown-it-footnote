@@ -278,9 +278,9 @@ Here is a footnote[^1] reference with [^2 added text].
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn1" class="footnote-item"><p>Here is a footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
+<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is a footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
 </li>
-<li id="fn2" class="footnote-item"><p>Here is another footnote. <a href="#fnref2" class="footnote-backref">↩</a></p>
+<li tabindex="-1" id="fn2" class="footnote-item"><p>Here is another footnote. <a href="#fnref2" class="footnote-backref">↩</a></p>
 </li>
 </ol>
 </section>
@@ -299,11 +299,11 @@ Here[^anote] is a footnote [^Bnote reference] with [^c-note added text].
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn1" class="footnote-item"><p>Here is the first footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is the first footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
 </li>
-<li id="fn2" class="footnote-item"><p>Here is the second footnote. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+<li tabindex="-1" id="fn2" class="footnote-item"><p>Here is the second footnote. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
 </li>
-<li id="fn3" class="footnote-item"><p>Here is the third footnote. <a href="#fnref3" class="footnote-backref">↩︎</a></p>
+<li tabindex="-1" id="fn3" class="footnote-item"><p>Here is the third footnote. <a href="#fnref3" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>
