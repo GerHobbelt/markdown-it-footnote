@@ -1,7 +1,5 @@
 /*! markdown-it-footnote 3.0.2-5 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
 
-'use strict';
-
 // Process footnotes
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -24,7 +22,7 @@ function headerFnDefault(state) {
   return '';
 }
 
-module.exports = function footnote_plugin(md, plugin_options) {
+function footnote_plugin(md, plugin_options) {
   let parseLinkLabel = md.helpers.parseLinkLabel,
       isSpace = md.utils.isSpace;
   let anchorFn = plugin_options && plugin_options.anchor ? plugin_options.anchor : anchorFnDefault;
@@ -496,5 +494,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
   md.inline.ruler.after('image', 'footnote_inline', footnote_inline);
   md.inline.ruler.after('footnote_inline', 'footnote_ref', footnote_ref);
   md.core.ruler.after('inline', 'footnote_tail', footnote_tail);
-};
-//# sourceMappingURL=markdownItFootnote.js.map
+}
+
+export default footnote_plugin;
+//# sourceMappingURL=markdownItFootnote.modern.js.map

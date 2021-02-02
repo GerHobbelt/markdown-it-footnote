@@ -1,8 +1,18 @@
 /* eslint-env mocha, es6 */
 
-let assert   = require('assert');
-let testgen  = require('@gerhobbelt/markdown-it-testgen');
-let path     = require('path');
+import assert from 'assert';
+import testgen from '@gerhobbelt/markdown-it-testgen';
+import path from 'path';
+import markdown_it from '@gerhobbelt/markdown-it';
+
+import { fileURLToPath } from 'url';
+
+// see https://nodejs.org/docs/latest-v13.x/api/esm.html#esm_no_require_exports_module_exports_filename_dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import plugin from '../index.js';
+
 
 // Most of the rest of this is inlined from generate(), but modified
 // so we can pass in an `env` object
@@ -29,21 +39,21 @@ function generate(fixturePath, md, env) {
 
 
 describe('footnote.txt', function () {
-  let md = require('@gerhobbelt/markdown-it')({ linkify: true }).use(require('../'));
+  let md = markdown_it({ linkify: true }).use(plugin);
 
   // Check that defaults work correctly
   generate(path.join(__dirname, 'fixtures/footnote.txt'), md);
 });
 
 describe('custom docId in env', function () {
-  let md = require('@gerhobbelt/markdown-it')().use(require('../'));
+  let md = markdown_it({ linkify: true }).use(plugin);
 
   // Now check that using `env.documentId` works to prefix IDs
   generate(path.join(__dirname, 'fixtures/footnote-prefixed.txt'), md, { docId: 'test-doc-id' });
 });
 
 describe('custom footnote ids and labels', function () {
-  let md = require('@gerhobbelt/markdown-it')().use(require('../'), {
+  let md = markdown_it({ linkify: true }).use(plugin, {
     anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
       let token = tokens[idx];
       if (token.meta.label) {

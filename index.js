@@ -22,7 +22,7 @@ function headerFnDefault(state) {
 }
 
 
-module.exports = function footnote_plugin(md, plugin_options) {
+export default function footnote_plugin(md, plugin_options) {
   let parseLinkLabel = md.helpers.parseLinkLabel,
       isSpace = md.utils.isSpace;
 
@@ -389,4 +389,4 @@ module.exports = function footnote_plugin(md, plugin_options) {
   md.inline.ruler.after('image', 'footnote_inline', footnote_inline);
   md.inline.ruler.after('footnote_inline', 'footnote_ref', footnote_ref);
   md.core.ruler.after('inline', 'footnote_tail', footnote_tail);
-};
+}
