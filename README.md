@@ -111,6 +111,12 @@ _Differences in browser._ If you load script directly into the page, without
 package system, module will add itself globally as `window.markdownitFootnote`.
 
 
+### Options
+
+`atDocumentEnd`: true/false (default: true) - where to generate the footnotes.
+
+
+
 ### Customize
 
 If you want to customize the output, you'll need to replace the template
