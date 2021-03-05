@@ -1,6 +1,4 @@
-/*! markdown-it-footnote 3.0.2-3 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
-
-'use strict';
+/*! markdown-it-footnote 3.0.2-7 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
 
 // Process footnotes
 //
@@ -24,7 +22,7 @@ function headerFnDefault(state) {
   return '';
 }
 
-module.exports = function footnote_plugin(md, plugin_options) {
+function footnote_plugin(md, plugin_options) {
   let parseLinkLabel = md.helpers.parseLinkLabel,
       isSpace = md.utils.isSpace;
   plugin_options = plugin_options || {};
@@ -58,6 +56,11 @@ module.exports = function footnote_plugin(md, plugin_options) {
     let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
     let refid = render_footnote_n(tokens, idx);
     refid = anchorFn(refid, false, tokens, idx, options, env, slf);
+
+    if (tokens[idx].meta.text) {
+      return '<a href="#fn' + id + '" id="fnref' + refid + '">' + tokens[idx].meta.text + '<sup class="footnote-ref">' + caption + '</sup></a>';
+    }
+
     return '<sup class="footnote-ref"><a href="#fn' + id + '" id="fnref' + refid + '">' + caption + '</a></sup>';
   }
 
@@ -78,7 +81,7 @@ module.exports = function footnote_plugin(md, plugin_options) {
       }
     */
 
-    return '<li id="fn' + id + '" class="footnote-item">';
+    return '<li tabindex="-1" id="fn' + id + '" class="footnote-item">';
   }
 
   function render_footnote_close() {
@@ -135,9 +138,11 @@ module.exports = function footnote_plugin(md, plugin_options) {
       }
 
     for (pos = start + 2; pos < max; pos++) {
-      if (state.src.charCodeAt(pos) === 0x20) {
-        return false;
-      }
+      if (state.src.charCodeAt(pos) === 0x20
+      /* space */
+      ) {
+          return false;
+        }
 
       if (state.src.charCodeAt(pos) === 0x5D
       /* ] */
@@ -289,6 +294,105 @@ module.exports = function footnote_plugin(md, plugin_options) {
     }
 
     state.pos = labelEnd + 1;
+    state.posMax = max;
+    return true;
+  } // Process footnote references with text ([^label ...])
+
+
+  function footnote_ref_with_text(state, silent) {
+    let label,
+        pos,
+        footnoteId,
+        footnoteSubId,
+        token,
+        max = state.posMax,
+        start = state.pos; // should be at least 6 chars - "[^l x]"
+
+    if (start + 5 > max) {
+      return false;
+    }
+
+    if (!state.env.footnotes || !state.env.footnotes.refs) {
+      return false;
+    }
+
+    if (state.src.charCodeAt(start) !== 0x5B
+    /* [ */
+    ) {
+        return false;
+      }
+
+    if (state.src.charCodeAt(start + 1) !== 0x5E
+    /* ^ */
+    ) {
+        return false;
+      }
+
+    for (pos = start + 2; pos < max; pos++) {
+      if (state.src.charCodeAt(pos) === 0x0A
+      /* linefeed */
+      ) {
+          return false;
+        }
+
+      if (state.src.charCodeAt(pos) === 0x5D
+      /* ] */
+      ) {
+          break;
+        }
+    }
+
+    if (pos === start + 2) {
+      return false;
+    } // no empty footnote labels
+
+
+    if (pos >= max) {
+      return false;
+    }
+
+    pos++;
+    label = state.src.slice(start + 2, pos - 1);
+
+    if (!label || !label.match(/^(\S+)\s+(.+)$/)) {
+      return false;
+    }
+
+    label = RegExp.$1;
+    let text = RegExp.$2;
+
+    if (typeof state.env.footnotes.refs[':' + label] === 'undefined') {
+      return false;
+    }
+
+    if (!silent) {
+      if (!state.env.footnotes.list) {
+        state.env.footnotes.list = [];
+      }
+
+      if (state.env.footnotes.refs[':' + label] < 0) {
+        footnoteId = state.env.footnotes.list.length;
+        state.env.footnotes.list[footnoteId] = {
+          label: label,
+          count: 0
+        };
+        state.env.footnotes.refs[':' + label] = footnoteId;
+      } else {
+        footnoteId = state.env.footnotes.refs[':' + label];
+      }
+
+      footnoteSubId = state.env.footnotes.list[footnoteId].count;
+      state.env.footnotes.list[footnoteId].count++;
+      token = state.push('footnote_ref', '', 0);
+      token.meta = {
+        id: footnoteId,
+        subId: footnoteSubId,
+        label: label,
+        text: text
+      };
+    }
+
+    state.pos = pos;
     state.posMax = max;
     return true;
   } // Process footnote references ([^...])
@@ -462,7 +566,9 @@ module.exports = function footnote_plugin(md, plugin_options) {
         token.block = true;
         tokens.push(token);
       } else if (list[i].label) {
-        tokens = refTokens[':' + list[i].label];
+        tokens = refTokens[':' + list[i].label] || [];
+      } else {
+        tokens = [];
       }
 
       firstHalfTokens = firstHalfTokens.concat(tokens);
@@ -502,7 +608,10 @@ module.exports = function footnote_plugin(md, plugin_options) {
     alt: ['paragraph', 'reference']
   });
   md.inline.ruler.after('image', 'footnote_inline', footnote_inline);
-  md.inline.ruler.after('footnote_inline', 'footnote_ref', footnote_ref);
+  md.inline.ruler.after('footnote_inline', 'footnote_ref_with_text', footnote_ref_with_text);
+  md.inline.ruler.after('footnote_ref_with_text', 'footnote_ref', footnote_ref);
   md.core.ruler.after('inline', 'footnote_tail', footnote_tail);
-};
-//# sourceMappingURL=markdownItFootnote.js.map
+}
+
+export default footnote_plugin;
+//# sourceMappingURL=markdownItFootnote.modern.js.map

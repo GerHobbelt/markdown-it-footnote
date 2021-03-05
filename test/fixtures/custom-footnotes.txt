@@ -17,13 +17,13 @@ belong to the previous footnote.
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn-1" class="footnote-item"><p>Here is the footnote. <a href="#fnref-1" class="footnote-backref">↩︎</a> <a href="#fnref-1~1" class="footnote-backref">↩︎</a></p>
+<li tabindex="-1" id="fn-1" class="footnote-item"><p>Here is the footnote. <a href="#fnref-1" class="footnote-backref">↩︎</a> <a href="#fnref-1~1" class="footnote-backref">↩︎</a></p>
 </li>
-<li id="fn-longnote" class="footnote-item"><p>Here's one with multiple blocks.</p>
+<li tabindex="-1" id="fn-longnote" class="footnote-item"><p>Here's one with multiple blocks.</p>
 <p>Subsequent paragraphs are indented to show that they
 belong to the previous footnote. <a href="#fnref-longnote" class="footnote-backref">↩︎</a> <a href="#fnref-longnote~1" class="footnote-backref">↩︎</a></p>
 </li>
-<li id="fn3" class="footnote-item"><p>it works! <a href="#fnref3" class="footnote-backref">↩︎</a></p>
+<li tabindex="-1" id="fn3" class="footnote-item"><p>it works! <a href="#fnref3" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>
