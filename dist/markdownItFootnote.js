@@ -559,7 +559,9 @@ function footnote_plugin(md, plugin_options) {
         token.block = true;
         tokens.push(token);
       } else if (list[i].label) {
-        tokens = refTokens[':' + list[i].label];
+        tokens = refTokens[':' + list[i].label] || [];
+      } else {
+        tokens = [];
       }
 
       state.tokens = state.tokens.concat(tokens);
