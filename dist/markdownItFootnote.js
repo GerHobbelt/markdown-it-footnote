@@ -1,4 +1,4 @@
-/*! markdown-it-footnote 3.0.3-8 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
+/*! markdown-it-footnote 3.0.3-9 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
 
 // Process footnotes
 //
