@@ -320,8 +320,8 @@ foo[^1] bar[^2].
 <hr class="footnotes-sep">
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="fn1" class="footnote-item"> <a href="#fnref1" class="footnote-backref">↩︎</a></li>
-<li id="fn2" class="footnote-item"><p>baz <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+<li tabindex="-1" id="fn1" class="footnote-item"> <a href="#fnref1" class="footnote-backref">↩︎</a></li>
+<li tabindex="-1" id="fn2" class="footnote-item"><p>baz <a href="#fnref2" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>
