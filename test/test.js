@@ -74,3 +74,13 @@ describe('custom footnote ids and labels', function () {
 
   generate(path.join(__dirname, 'fixtures/custom-footnotes.txt'), md);
 });
+
+
+describe('footnotes get parked at the end of the containing section', function () {
+  let md = markdown_it({ linkify: true }).use(plugin, {
+    atDocumentEnd: false
+  });
+
+  // Check that defaults work correctly
+  generate(path.join(__dirname, 'fixtures/footnotes-at-end-of-each-section.txt'), md);
+});

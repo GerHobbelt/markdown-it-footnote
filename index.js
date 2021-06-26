@@ -397,6 +397,7 @@ export default function footnote_plugin(md, plugin_options) {
       return !insideRef;
     });
 
+    console.error({ lastRefIndex, nextRefIndex: lastRefIndex - ((oldLen - state.tokens.length) - 1),  atDocumentEnd: plugin_options.atDocumentEnd, oldLen, tokens_length: state.tokens.length, list: state.env.footnotes.list });
     lastRefIndex = plugin_options.atDocumentEnd ? state.tokens.length : lastRefIndex - ((oldLen - state.tokens.length) - 1);
     let firstHalfTokens = state.tokens.slice(0, lastRefIndex);
 
