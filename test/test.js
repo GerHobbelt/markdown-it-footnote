@@ -20,7 +20,6 @@ import plugin from '../index.js';
 function generate(fixturePath, md, env) {
   testgen.load(fixturePath, {}, function (data) {
     data.meta = data.meta || {};
-    console.error({ data: data });
 
     let desc = data.meta.desc || path.relative(fixturePath, data.file);
 
@@ -29,8 +28,15 @@ function generate(fixturePath, md, env) {
         it(fixture.header + ' [#' + (fixture.first.range[0] - 1) + ']', function () {
           let test_env = Object.assign({}, env || {});
           let rv = md.render(fixture.first.text, test_env);
+          let html_rv = `<html>
+          <head>
+          ${ data.meta.css || ''}
+          </head>
+          <body>
+          ${rv}
+          `;
           let diagnostic_filename_base = path.join(__dirname, fixture.header.slice(0, 64).replace(/[^0-9a-z]+/gi, ' ').trim().replace(/ /g, '_'));
-          fs.writeFileSync(diagnostic_filename_base + '.html', rv, 'utf8');
+          fs.writeFileSync(diagnostic_filename_base + '.html', html_rv, 'utf8');
           delete test_env.state_block.env;
           fs.writeFileSync(diagnostic_filename_base + '.dump.json', JSON.stringify(test_env, null, 2), 'utf8');
           // add variant character after "↩", so we don't have to worry about
