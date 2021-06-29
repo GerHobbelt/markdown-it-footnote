@@ -1,4 +1,18 @@
-
+------
+css: |
+    <style>
+    li.footnote-item {
+        list-style-type: none;
+        /* position:  relative; */
+    }
+    span.footnote-caption {
+        /* position: absolute; */
+        float:  left;
+        margin-left:  -1em;
+    }
+    </style>
+    
+------
 
 
 And then here's a big example where we expect **multiple sections** filled with footnotes, at the spot where they have been defined!
@@ -10,7 +24,21 @@ Meanhwile, **inline footnotes** should produce an ASIDE at the end of the active
 
 ## Sub heading 2
 
-Some even nicer text
+How to style this using classical CSS?
+
+Example:
+
+```css
+li.footnote-item {
+    list-style-type: none;
+    /* position:  relative; */
+}
+span.footnote-caption {
+    /* position: absolute; */
+    float:  left;
+    margin-left:  -1em;
+}
+```
 
 
 ### Subsub heading 2.1
@@ -24,6 +52,9 @@ Some even nicer text
 
 Here is an inline footnote reference^[the way you might imagine, we got fruitcakes all around Santa Monica] for every one of us.
 
+Plus an aside^[>that should be plugged in right at the end of this paragraph!] for every one of us.
+
+Avec du blah blah surplus pour les experiments...
 
 ## Sub heading 3
 
@@ -39,7 +70,7 @@ Some even nicer text
 
 ## Footnotes Exemplified...
 
-Here is a footnote reference,[^1] and another.[^longnote]
+Here is a footnote reference[^1], and another[^longnote].
 
 [^1]: Here is the footnote.
 
@@ -61,7 +92,7 @@ isn't indented.
 
 ## Footnotes Galore
 
-Here is a footnote reference,[^2] and another.[^3]
+Here is a footnote reference[^2], and another[^3].
 
 [^2]: Here is the 2nd footnote.
 
@@ -73,7 +104,7 @@ Some even nicer text
 
 ### Footnotes Galore
 
-Here is a footnote reference,[^x] and another.[^y]
+Here is a footnote reference[^x], and another[^y].
 
 [^x]: Here is the X footnote.
 

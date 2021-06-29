@@ -20,6 +20,7 @@ import plugin from '../index.js';
 function generate(fixturePath, md, env) {
   testgen.load(fixturePath, {}, function (data) {
     data.meta = data.meta || {};
+    console.error({ data: data });
 
     let desc = data.meta.desc || path.relative(fixturePath, data.file);
 
@@ -63,7 +64,11 @@ if (0) {
   });
 
   describe('custom footnote ids and labels', function () {
-    let md = markdown_it({ linkify: true }).use(plugin, {
+    let md = markdown_it({
+      linkify: true,
+      html: true,
+      typographer: true
+    }).use(plugin, {
       anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
         let token = tokens[idx];
         if (token.meta.label) {

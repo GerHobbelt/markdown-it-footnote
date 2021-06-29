@@ -14,7 +14,8 @@ function anchorFnDefault(n, excludeSubId, tokens, idx, options, env, slf) {
 }
 
 function captionFnDefault(n, tokens, idx, options, env, slf) {
-  return '[' + n + ']';
+  //return '[' + n + ']';
+  return '' + n;
 }
 
 function headerFnDefault(state) {
@@ -50,11 +51,67 @@ export default function footnote_plugin(md, plugin_options) {
     atDocumentEnd: false,
     anchorFn: anchorFnDefault,
     captionFn: captionFnDefault,
-    headerFn: headerFnDefault
+    headerFn: headerFnDefault,
+
+    // see also https://www.editage.com/insights/footnotes-in-tables-part-1-choice-of-footnote-markers-and-their-sequence
+    // why asterisk/star is not part of the default footnote marker sequence.
+    //
+    // For similar reasons, we DO NOT include the section § symbol in this list.
+    //
+    // when numberSequnce is NULL/empty, a regular numerical numbering is assumed.
+    // Otherwise, the array is indexed; when there are more footnotes than entries in
+    // the numberSequence array, the entries are re-used, but doubled/trippled, etc.
+    //
+    // When the indexing in this array hits a NUMERIC value (as last entry), any higher
+    // footnotes are NUMBERED starting at that number.
+    //
+    // NOTE: as we can reference the same footnote from multiple spots, we do not depend
+    // on CSS counter() approaches by default, but providee this mechanism in the plugin
+    // code itself.
+    numberSequence: [ '†', '‡', '††', '‡‡', '¶', 1 ]
   });
 
+  function determine_footnote_symbol(idx) {
+    if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) { return idx + 1; }
+    const len = plugin_options.numberSequence.length;
+    if (idx >= len) {
+      // is last slot numeric or alphabetical?
+      let slot = plugin_options.numberSequence[len - 1];
+      if (Number.isFinite(slot)) {
+        let delta = idx - len + 1;
+        return slot + delta;
+      }
+
+        // non-numerical last slot --> duplicate, triplicate, etc.
+      let dupli = (idx / len) | 0;  // = int(x mod N)
+      let remainder = idx % len;
+      let core = plugin_options.numberSequence[remainder];
+      let str = core;
+      for (let i = 1; i < dupli; i++) {
+        str += core;
+      }
+      return str;
+
+    }
+
+    return plugin_options.numberSequence[idx];
+
+  }
+
   function render_footnote_n(tokens, idx, excludeSubId) {
-    let n = Number(tokens[idx].meta.id + 1).toString();
+    let mark = tokens[idx].meta.id + 1;
+    let n = '' + mark; // = mark.toString();
+
+    if (!excludeSubId && tokens[idx].meta.subId > 0) {
+      n += ':' + tokens[idx].meta.subId;
+    }
+
+    return n;
+  }
+
+  function render_footnote_mark(tokens, idx, excludeSubId) {
+    let mark = determine_footnote_symbol(tokens[idx].meta.id);
+    let n = '' + mark; // = mark.toString();
 
     if (!excludeSubId && tokens[idx].meta.subId > 0) {
       n += ':' + tokens[idx].meta.subId;
@@ -68,16 +125,20 @@ export default function footnote_plugin(md, plugin_options) {
     return plugin_options.anchorFn(n, true, tokens, idx, options, env, slf);
   }
 
+  function render_footnote_anchor_nameRef(tokens, idx, options, env, slf) {
+    let n = render_footnote_n(tokens, idx, false);
+    return plugin_options.anchorFn(n, false, tokens, idx, options, env, slf);
+  }
+
   function render_footnote_caption(tokens, idx, options, env, slf) {
-    let n = render_footnote_n(tokens, idx);
+    let n = render_footnote_mark(tokens, idx);
     return plugin_options.captionFn(n, tokens, idx, options, env, slf);
   }
 
   function render_footnote_ref(tokens, idx, options, env, slf) {
     let id      = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf);
     let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
-    let refid   = render_footnote_n(tokens, idx);
-    refid = plugin_options.anchorFn(refid, false, tokens, idx, options, env, slf);
+    let refid   = render_footnote_anchor_nameRef(tokens, idx, options, env, slf);
 
     if (tokens[idx].meta.text) {
       return '<a href="#fn' + id + '" id="fnref' + refid + '">' +
@@ -93,11 +154,11 @@ export default function footnote_plugin(md, plugin_options) {
     return (options.xhtmlOut ? '<hr class="footnotes-sep" />\n' : '<hr class="footnotes-sep">\n') +
          '<section class="footnotes">\n' +
            (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
-         '<ol class="footnotes-list">\n';
+         '<ul class="footnotes-list">\n';
   }
 
   function render_footnote_block_close() {
-    return '</ol>\n</section>\n';
+    return '</ul>\n</section>\n';
   }
 
   function render_footnote_reference_open(tokens, idx, options) {
@@ -114,18 +175,16 @@ export default function footnote_plugin(md, plugin_options) {
 
   function render_footnote_open(tokens, idx, options, env, slf) {
     let id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf);
+    let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
 
-/*
-  if (tokens[idx].meta.subId > 0) {
-    id += ':' + tokens[idx].meta.subId;
-  }
-*/
-
-    return '<li tabindex="-1" id="fn' + id + '" class="footnote-item">';
+    // allow both a JavaWScript --> CSS approach via `data-footnote-caption`
+    // and a classic CSS approach while a display:inline-block SUP presenting
+    // the LI 'button' instead:
+    return `<li tabindex="-1" id="fn${ id }" class="footnote-item" data-footnote-caption="${ caption }"><span class="footnote-caption"><sup class="footnote-caption">${ caption }</sup></span><span class="footnote-content">`;
   }
 
   function render_footnote_close() {
-    return '</li>\n';
+    return '</span></li>\n';
   }
 
   function render_footnote_anchor(tokens, idx, options, env, slf) {
