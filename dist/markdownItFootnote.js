@@ -216,8 +216,9 @@ function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_close = render_footnote_close;
   md.renderer.rules.footnote_anchor = render_footnote_anchor;
 
-  function find_end_of_block_marker(tokens, startIndex) {
+  function find_end_of_block_marker(state, startIndex) {
     let idx, len;
+    let tokens = state.tokens;
 
     for (idx = startIndex, len = tokens.length; idx < len; idx++) {
       if (tokens[idx].type === 'footnote_mark_end_of_block') {
@@ -231,7 +232,7 @@ function footnote_plugin(md, plugin_options) {
       idx,
       len
     });
-    throw Error('Should never get here!');
+    throw Error('Should never get here!'); // Punch a slot into the token stream (at the very end)
   }
 
   function update_end_of_block_marker(state, footnoteId) {
@@ -240,7 +241,7 @@ function footnote_plugin(md, plugin_options) {
     // 'inline' chunks, we CANNOT safely inject a marker BEFORE the chunk, only AFTERWARDS:
     let parentState = state.env.parentState;
     let parentIndex = state.env.parentTokenIndex;
-    let markerTokenIndex = find_end_of_block_marker(parentState.tokens, parentIndex + 1);
+    let markerTokenIndex = find_end_of_block_marker(parentState, parentIndex + 1);
     let token = parentState.tokens[markerTokenIndex];
     if (!token.meta) token.meta = {};
     if (!token.meta.footnote_list) token.meta.footnote_list = [];
@@ -723,26 +724,22 @@ function footnote_plugin(md, plugin_options) {
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
       state.tokens = state.tokens.filter(function (tok, idx) {
-        if (tok.type === 'footnote_mark_end_of_block') {
-          return false;
-        }
-
-        return true;
+        return tok.type !== 'footnote_mark_end_of_block';
       });
       return;
-    } // Punch a slot into the token stream (at the very end)
-    // for consistency with footnote_mark_end_of_block():
-    //footnote_mark_end_of_block(state, startLine, endLine, silent);
-
-
-    token = new state.Token('footnote_mark_end_of_block', '', 0);
-    token.hidden = true;
-    state.tokens.push(token); // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
+    } // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
     // store that bunch in `refTokens[:<currentLabel>]` instead, to be injected back into
     // the tokenstream at the appropriate spots.
 
     state.tokens = state.tokens.filter(function (tok, idx) {
       switch (tok.type) {
+        // filter out 'footnote_mark_end_of_block' tokens which follow BLOCKS that do not contain any
+        // footnote/sidenote/endnote references:
+        case 'footnote_mark_end_of_block':
+          if (!tok.meta) return false;
+          if (!tok.meta.footnote_list) return false;
+          break;
+
         case 'footnote_reference_open':
           insideRef = true;
           current = [];
