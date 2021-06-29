@@ -166,7 +166,7 @@ Here is a footnote reference[^x], and another[^y]. **Note that the footnotes all
 
     This one comes cheap, one careful owner. Satisfaction guaranteed!
 
-[^y]: Here `(P)` is the Y footnote. And a bit[^2] of cross[^3] fertilization[^sure]. We even have a cycle[^x]!
+[^y]: Here `(P)` is the Y footnote. And a bit[^2] of cross[^3][^x][^z] fertilization[^sure]. We even have a cycle[^x]!
 
 
 

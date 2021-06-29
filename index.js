@@ -137,13 +137,30 @@ export default function footnote_plugin(md, plugin_options) {
     let caption = render_footnote_caption(tokens, idx, options, env, slf);
     let refid   = render_footnote_anchor_nameRef(tokens, idx, options, env, slf);
 
+    // check if multiple footnote references are bunched together:
+    // IFF they are, we should separate them with commas.
+    //
+    // Exception: when next token has an extra text (`meta.text`) the
+    // bunching together is not a problem as them the output will render
+    // like this: `bla<sup>1</sup><a>text<sup>2</sup></a>`, ergo a look
+    // like this: `bla¹text²` instead of bunched footnotes references ¹ and ²
+    // that would (without the extra comma injection) look like `bla¹²` instead
+    // of `x¹⁺²` (here '+' instead of ',' comma, but you get the idea -- there's no
+    // Unicode superscript-comma so that's why I used unicode superscript-plus
+    // in this 'ascii art' example).
+    //
+    const next_token = tokens[idx + 1] || {};
+    const next_token_meta = next_token.meta || {};
+    const bunched_footnote_refs = next_token.type === 'footnote_ref' && !next_token_meta.text;
+
     if (tokens[idx].meta.text) {
       return '<a href="#fn' + id + '" id="fnref' + refid + '">' +
             tokens[idx].meta.text +
-            '<sup class="footnote-ref">' + caption + '</sup></a>';
+            '<sup class="footnote-ref">' + caption + '</sup></a>' +
+            (bunched_footnote_refs ? '<sup class="footnote-ref">,</sup>' : '');
     }
 
-    return '<sup class="footnote-ref"><a href="#fn' + id + '" id="fnref' + refid + '">' + caption + '</a></sup>';
+    return `<sup class="footnote-ref"><a href="#fn${ id }" id="fnref${ refid }">${ caption }</a>${ bunched_footnote_refs ? ',' : '' }</sup>`;
   }
 
   function render_footnote_block_open(tokens, idx, options) {
