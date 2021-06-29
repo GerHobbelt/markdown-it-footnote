@@ -108,9 +108,10 @@ export default function footnote_plugin(md, plugin_options) {
     return n;
   }
 
-  function render_footnote_mark(tokens, idx) {
+  function render_footnote_mark(tokens, idx, env) {
     let token = tokens[idx];
-    let labelOverride = token.meta.labelOverride;
+    let info = env.footnotes.list[token.meta.id] || {};
+    let labelOverride = info.labelOverride;
     let mark = labelOverride || determine_footnote_symbol(token.meta.id);
     let n = '' + mark; // = mark.toString();
     return n;
@@ -127,7 +128,7 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_caption(tokens, idx, options, env, slf) {
-    let n = render_footnote_mark(tokens, idx);
+    let n = render_footnote_mark(tokens, idx, env);
     return plugin_options.captionFn(n, tokens, idx, options, env, slf);
   }
 
@@ -565,7 +566,7 @@ export default function footnote_plugin(md, plugin_options) {
 
   // Glue footnote tokens to end of token stream
   function footnote_tail(state, startLine, endLine, silent) {
-    let i, l, j, t, lastParagraph, token, tokens, current, currentLabel,
+    let i, l, j, t, lastParagraph, token, tokens, current, currentRefToken,
         lastRefIndex = 0,
         insideRef = false,
         refTokens = {};
@@ -599,7 +600,7 @@ export default function footnote_plugin(md, plugin_options) {
       case 'footnote_reference_open':
         insideRef = true;
         current = [];
-        currentLabel = tok.meta.label;
+        currentRefToken = tok;
         if (tok.meta.mode === '>') {
           aside_list.push(idx);
         }
@@ -608,7 +609,10 @@ export default function footnote_plugin(md, plugin_options) {
       case 'footnote_reference_close':
         insideRef = false;
         // prepend ':' to avoid conflict with Object.prototype members
-        refTokens[':' + currentLabel] = current;
+        refTokens[':' + currentRefToken.meta.label] = {
+          tokens: current,
+          meta: currentRefToken.meta
+        };
         lastRefIndex = idx;
         return true;
       }
@@ -630,27 +634,37 @@ export default function footnote_plugin(md, plugin_options) {
     inject_tokens.push(token);
 
     for (i = 0, l = list.length; i < l; i++) {
+      let fn = list[i];
       token      = new state.Token('footnote_open', '', 1);
-      token.meta = { id: i, label: list[i].label };
+      token.meta = {
+        id: i,
+        label: fn.label
+      };
       inject_tokens.push(token);
 
-      if (list[i].tokens) {
+      if (fn.tokens) {
         // process an inline footnote text:
         token          = new state.Token('paragraph_open', 'p', 1);
         token.block    = true;
         inject_tokens.push(token);
 
         token          = new state.Token('inline', '', 0);
-        token.children = list[i].tokens;
-        token.content  = list[i].content;
+        token.children = fn.tokens;
+        token.content  = fn.content;
         inject_tokens.push(token);
 
         token          = new state.Token('paragraph_close', 'p', -1);
         token.block    = true;
         inject_tokens.push(token);
-      } else if (list[i].label) {
+      } else if (fn.label) {
         // process a labeled footnote:
-        inject_tokens = inject_tokens.concat(refTokens[':' + list[i].label] || []);
+        let info = refTokens[':' + fn.label] || {};
+        inject_tokens = inject_tokens.concat(info.tokens || []);
+        if (info.meta) {
+          // also update the global footnote info list:
+          fn.labelOverride = info.meta.labelOverride;
+          fn.mode = info.meta.mode;
+        }
       } else {
         // nothing to inject
         throw Error('unexpected: should never get here!');
@@ -662,10 +676,14 @@ export default function footnote_plugin(md, plugin_options) {
         lastParagraph = null;
       }
 
-      t = list[i].count > 0 ? list[i].count : 1;
+      t = Math.max(fn.count, 1);
       for (j = 0; j < t; j++) {
-        token      = new state.Token('footnote_anchor', '', 0);
-        token.meta = { id: i, subId: j, label: list[i].label };
+        token = new state.Token('footnote_anchor', '', 0);
+        token.meta = {
+          id: i,
+          subId: j,
+          label: fn.label
+        };
         inject_tokens.push(token);
       }
 

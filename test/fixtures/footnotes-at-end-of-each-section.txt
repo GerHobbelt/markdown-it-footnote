@@ -29,7 +29,7 @@ css: |
     span.footnote-caption {
         /* position: absolute; */
         float:  left;
-        margin-left:  -1.8em;
+        margin-left:  -2.2em;
 
         margin-top: -1px;
         border-top: 1px solid #e0e0e0;
@@ -40,7 +40,7 @@ css: |
            because we want the top border to continue uninterrupted along the entire width of float+LI. */
         background-color: #f3f3f3;
         background: linear-gradient(90deg, #f3f3f3 0%, #f3f3f3 81%, rgba(255,128,0,1) 81%, rgba(255,128,0,1) 93%, rgba(255,255,255,1) 93%, rgba(255,255,255,1) 100%);
-        width: 1.8em;
+        width: 2.2em;
         box-sizing: border-box;
         display: block;
         xborder-right: solid 2px white;
@@ -162,7 +162,7 @@ Here is a footnote reference[^x], and another[^y]. **Note that the footnotes all
 
 [^z]: that's `(N)` what *he*[^y] said.
 
-[^sure LABEL]: Can `(O)` I interest you in bridge for sale? 
+[^sure LBL]: Can `(O)` I interest you in bridge for sale? 
 
     This one comes cheap, one careful owner. Satisfaction guaranteed!
 
