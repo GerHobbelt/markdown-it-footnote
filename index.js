@@ -95,7 +95,6 @@ export default function footnote_plugin(md, plugin_options) {
     }
 
     return plugin_options.numberSequence[idx];
-
   }
 
   function render_footnote_n(tokens, idx, excludeSubId) {
@@ -103,20 +102,17 @@ export default function footnote_plugin(md, plugin_options) {
     let n = '' + mark; // = mark.toString();
 
     if (!excludeSubId && tokens[idx].meta.subId > 0) {
-      n += ':' + tokens[idx].meta.subId;
+      n += '-' + tokens[idx].meta.subId;
     }
 
     return n;
   }
 
-  function render_footnote_mark(tokens, idx, excludeSubId) {
-    let mark = determine_footnote_symbol(tokens[idx].meta.id);
+  function render_footnote_mark(tokens, idx) {
+    let token = tokens[idx];
+    let labelOverride = token.meta.labelOverride;
+    let mark = labelOverride || determine_footnote_symbol(token.meta.id);
     let n = '' + mark; // = mark.toString();
-
-    if (!excludeSubId && tokens[idx].meta.subId > 0) {
-      n += ':' + tokens[idx].meta.subId;
-    }
-
     return n;
   }
 
@@ -136,8 +132,8 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_ref(tokens, idx, options, env, slf) {
-    let id      = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf);
-    let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
+    let id      = render_footnote_anchor_name(tokens, idx, options, env, slf);
+    let caption = render_footnote_caption(tokens, idx, options, env, slf);
     let refid   = render_footnote_anchor_nameRef(tokens, idx, options, env, slf);
 
     if (tokens[idx].meta.text) {
@@ -174,8 +170,8 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_open(tokens, idx, options, env, slf) {
-    let id = slf.rules.footnote_anchor_name(tokens, idx, options, env, slf);
-    let caption = slf.rules.footnote_caption(tokens, idx, options, env, slf);
+    let id = render_footnote_anchor_name(tokens, idx, options, env, slf);
+    let caption = render_footnote_caption(tokens, idx, options, env, slf);
 
     // allow both a JavaWScript --> CSS approach via `data-footnote-caption`
     // and a classic CSS approach while a display:inline-block SUP presenting
@@ -206,10 +202,6 @@ export default function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_close        = render_footnote_close;
   md.renderer.rules.footnote_anchor       = render_footnote_anchor;
 
-  // helpers (only used in other rules, no tokens are attached to those)
-  md.renderer.rules.footnote_caption      = render_footnote_caption;
-  md.renderer.rules.footnote_anchor_name  = render_footnote_anchor_name;
-
   function find_end_of_block_marker(tokens, startIndex) {
     let idx, len;
     for (idx = startIndex, len = tokens.length; idx < len; idx++) {
@@ -237,8 +229,6 @@ export default function footnote_plugin(md, plugin_options) {
     if (!silent && state.tokens.length > 0) {
       let token = state.push('footnote_mark_end_of_block', '', 0);
       token.hidden = true;
-      token.meta = {
-      };
     }
     return false;
   }
@@ -257,7 +247,7 @@ export default function footnote_plugin(md, plugin_options) {
     if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) { return false; }
 
     for (pos = start + 2; pos < max; pos++) {
-      if (state.src.charCodeAt(pos) === 0x20 /* space */) { return false; }
+      if (state.src.charCodeAt(pos) === 0x0A /* LF */) { return false; }
       if (state.src.charCodeAt(pos) === 0x5D /* ] */) {
         break;
       }
@@ -266,8 +256,12 @@ export default function footnote_plugin(md, plugin_options) {
 
     if (pos === start + 2) { return false; } // no empty footnote labels
     if (pos + 1 >= max || state.src.charCodeAt(++pos) !== 0x3A /* : */) { return false; }
-    let aside_note = (state.src.charCodeAt(pos + 1) === 0x3E /* > */);
-    if (aside_note) { pos++; }
+    let mode = state.src[pos + 1];
+    if ('>:='.includes(mode)) {
+      pos++;
+    } else {
+      mode = '=';   // default mode is section_note mode.
+    }
     if (pos + 1 >= max || state.src.charCodeAt(++pos) !== 0x20 /* space */) { return false; }
     if (silent) { return true; }
     pos++;
@@ -275,13 +269,21 @@ export default function footnote_plugin(md, plugin_options) {
     if (!state.env.footnotes) { state.env.footnotes = {}; }
     if (!state.env.footnotes.refs) { state.env.footnotes.refs = {}; }
     label = state.src.slice(start + 2, labelEnd);
-    console.error('extracted label = ', { label, labelEnd, pos, start });
+    let text;
+    if (label.match(/^(\S+)\s+(.+)$/)) {
+      label = RegExp.$1;
+      text = RegExp.$2;
+    }
+
+    console.error('extracted label = ', { label, text, labelEnd, pos, start });
     state.env.footnotes.refs[':' + label] = -1;
 
     token = state.push('footnote_reference_open', '', 1);
     token.meta = {
+      id: -1,
       label,
-      aside: aside_note
+      labelOverride: text,
+      mode
     };
     token.hidden = true;
 
@@ -348,8 +350,25 @@ export default function footnote_plugin(md, plugin_options) {
     if (state.src.charCodeAt(start + 1) !== 0x5B/* [ */) { return false; }
 
     labelStart = start + 2;
-    let aside_note = (state.src.charCodeAt(start + 2) === 0x3E/* > */);
-    if (aside_note) { labelStart++; }
+
+    // NOTE: inline notes are automatically considered to be ASIDE notes,
+    // UNLESS otherwise specified!
+    //
+    // Recognized 'modes':
+    // '>': aside note (default for inline notes)
+    // ':': end node
+    // '=': section note (default for regular referenced notes)
+    //
+    // (Also note https://v4.chriskrycho.com/2015/academic-markdown-and-citations.html:
+    // our notes look like this: `[^ref]:` while Academic MarkDown references look
+    // like this: `[@Belawog2012]` i.e. no '^' in there. Hence these can safely co-exist.)
+    //
+    let mode = state.src[start + 2];
+    if ('>:='.includes(mode)) {
+      labelStart++;
+    } else {
+      mode = '>';
+    }
     labelEnd = parseLinkLabel(state, start + 1);
 
     // parser failed to find ']', so it's not a valid note
@@ -375,7 +394,10 @@ export default function footnote_plugin(md, plugin_options) {
 
       token = state.push('footnote_ref', '', 0);
       //token.meta = { id: footnoteId, subId: 0, label: null };
-      token.meta = { id: footnoteId };
+      token.meta = {
+        id: footnoteId,
+        mode
+      };
 
       state.md.inline.parse(
         state.src.slice(labelStart, labelEnd),
@@ -384,10 +406,11 @@ export default function footnote_plugin(md, plugin_options) {
         tokens = []
       );
 
+      // Now fill our previously claimed slot:
       parentEnv.footnotes.list[footnoteId] = {
         content: state.src.slice(labelStart, labelEnd),
-        tokens: tokens,
-        aside: aside_note
+        tokens,
+        mode
       };
 
       // inject marker into parent = block level token stream to announce the advent of an (inline) footnote:
@@ -461,7 +484,12 @@ export default function footnote_plugin(md, plugin_options) {
       state.env.footnotes.list[footnoteId].count++;
 
       token = state.push('footnote_ref', '', 0);
-      token.meta = { id: footnoteId, subId: footnoteSubId, label, text };
+      token.meta = {
+        id: footnoteId,
+        subId: footnoteSubId,
+        label,
+        text
+      };
 
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
@@ -521,7 +549,11 @@ export default function footnote_plugin(md, plugin_options) {
       state.env.footnotes.list[footnoteId].count++;
 
       token = state.push('footnote_ref', '', 0);
-      token.meta = { id: footnoteId, subId: footnoteSubId, label };
+      token.meta = {
+        id: footnoteId,
+        subId: footnoteSubId,
+        label
+      };
 
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
@@ -568,7 +600,7 @@ export default function footnote_plugin(md, plugin_options) {
         insideRef = true;
         current = [];
         currentLabel = tok.meta.label;
-        if (tok.meta.aside) {
+        if (tok.meta.mode === '>') {
           aside_list.push(idx);
         }
         return true;
