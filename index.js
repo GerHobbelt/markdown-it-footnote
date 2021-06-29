@@ -369,6 +369,10 @@ export default function footnote_plugin(md, plugin_options) {
       if (!parentEnv.footnotes.list) { parentEnv.footnotes.list = []; }
       footnoteId = parentEnv.footnotes.list.length;
 
+      // WARNING: claim our footnote slot for there MAY be nested footnotes
+      // discovered in the next inline.parse() call below!
+      parentEnv.footnotes.list[footnoteId] = null;
+
       token = state.push('footnote_ref', '', 0);
       //token.meta = { id: footnoteId, subId: 0, label: null };
       token.meta = { id: footnoteId };
@@ -534,17 +538,22 @@ export default function footnote_plugin(md, plugin_options) {
         insideRef = false,
         refTokens = {};
 
+    console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL');
+    if (!state.env.footnotes) {
+      // filter out all 'footnote_mark_end_of_block' chunks:
+      state.tokens = state.tokens.filter(function (tok, idx) {
+        if (tok.type === 'footnote_mark_end_of_block') { return false; }
+        return true;
+      });
+      return;
+    }
+
     // Punch a slot into the token stream (at the very end)
     // for consistency with footnote_mark_end_of_block():
     //footnote_mark_end_of_block(state, startLine, endLine, silent);
     token = new state.Token('footnote_mark_end_of_block', '', 0);
     token.hidden = true;
     state.tokens.push(token);
-
-    console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL');
-    if (!state.env.footnotes) { return; }
-
-    let oldLen = state.tokens.length;
 
     // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
     let aside_list = [];
@@ -555,13 +564,13 @@ export default function footnote_plugin(md, plugin_options) {
     // the tokenstream at the appropriate spots.
     state.tokens = state.tokens.filter(function (tok, idx) {
       switch (tok.type) {
-      case 'footnote_mark_inline_footnote':
-        break;
-
       case 'footnote_reference_open':
         insideRef = true;
         current = [];
         currentLabel = tok.meta.label;
+        if (tok.meta.aside) {
+          aside_list.push(idx);
+        }
         return true;
 
       case 'footnote_reference_close':
@@ -577,8 +586,7 @@ export default function footnote_plugin(md, plugin_options) {
       return !insideRef;
     });
 
-    console.error({ lastRefIndex, nextRefIndex: lastRefIndex - ((oldLen - state.tokens.length) - 1),  atDocumentEnd: plugin_options.atDocumentEnd, oldLen, tokens_length: state.tokens.length, list: state.env.footnotes.list });
-    lastRefIndex = plugin_options.atDocumentEnd ? state.tokens.length : lastRefIndex - ((oldLen - state.tokens.length) - 1);
+    lastRefIndex = plugin_options.atDocumentEnd ? state.tokens.length : state.tokens.length;
 
     let list = state.env.footnotes.list;
     if (!list) { return; }

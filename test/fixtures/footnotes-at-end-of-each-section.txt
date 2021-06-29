@@ -151,13 +151,19 @@ Here is a footnote reference[^2], and another[^3].
 
 ## Sub heading 3
 
-Some even nicer text
+Some even nicer text with *nested* inline footnotes A^[nested^[into the deep^[that's closer to a black hole^[getting scientific, are we now?] of footnote **depth**^[one wonders how many *fathom* this would be, then...] ravine.] end near a rabbit hole.] horrors abound. Chtulhu footnote style?] & Alice.
 
 ### Footnotes Galore
 
 Here is a footnote reference[^x], and another[^y].
 
-[^x]: Here is the X footnote.
+[^x]: Here is the X footnote. With a footnote[^z] nested in itself^[it can get complicated[^sure] if you are not careful!] and of itself. Yada.
+
+[^z]: that's what *he* said.
+
+[^sure]: Can I interest you in bridge for sale? 
+
+    This one comes cheap, one careful owner. Satisfaction guaranteed!
 
 [^y]: Here is the Y footnote.
 .
