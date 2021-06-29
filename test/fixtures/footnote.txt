@@ -18,9 +18,14 @@ belong to the previous footnote.
 
 This paragraph won't be part of the note, because it
 isn't indented.
+
+This paragraph won't be part of the note neither, because it
+isn't indented.
 .
 <p>Here is a footnote reference,<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> and another.<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup></p>
 <p>This paragraph won't be part of the note, because it
+isn't indented.</p>
+<p>This paragraph won't be part of the note neither, because it
 isn't indented.</p>
 <hr class="footnotes-sep">
 <section class="footnotes">

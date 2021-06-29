@@ -1,3 +1,10 @@
+
+
+
+And then here's a big example where we expect **multiple sections** filled with footnotes, at the spot where they have been defined!
+
+Meanhwile, **inline footnotes** should produce an ASIDE at the end of the active paragraph!
+
 .
 # Testing 1
 
@@ -74,3 +81,4 @@ Here is a footnote reference,[^x] and another.[^y]
 .
 xxx
 .
+

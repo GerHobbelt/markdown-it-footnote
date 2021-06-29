@@ -59,7 +59,7 @@ rules:
   no-catch-shadow:        2
   no-cond-assign:         2
   no-console:             1
-  no-constant-condition:  2
+  no-constant-condition:  1
   no-control-regex:       1
   no-debugger:            1
   no-delete-var:          2
@@ -128,7 +128,7 @@ rules:
   no-undef-init:          2
   no-undefined:           1
   no-unexpected-multiline: 2
-  no-unreachable:         2
+  no-unreachable:         1
   no-unused-expressions:  2
   no-unused-vars:         1
   no-use-before-define:   1
