@@ -224,15 +224,20 @@ function footnote_plugin(md, plugin_options) {
       if (tokens[idx].type === 'footnote_mark_end_of_block') {
         return idx;
       }
-    }
+    } //console.error({ tok: tokens.slice(startIndex), startIndex, idx, len });
+    //throw Error('Should never get here!');
+    // Punch a slot into the token stream (at the very end)
+    // for consistency with footnote_mark_end_of_block():
+    //footnote_mark_end_of_block(state, startLine, endLine, silent);
 
-    console.error({
-      tok: tokens.slice(startIndex),
-      startIndex,
-      idx,
-      len
-    });
-    throw Error('Should never get here!'); // Punch a slot into the token stream (at the very end)
+
+    let token = new state.Token('footnote_mark_end_of_block', '', 0);
+    token.hidden = true; //token.meta = {
+    //  EndOfFile: true
+    //};
+
+    tokens.push(token);
+    return tokens.length - 1;
   }
 
   function update_end_of_block_marker(state, footnoteId) {
