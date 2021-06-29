@@ -234,6 +234,19 @@ function footnote_plugin(md, plugin_options) {
     throw Error('Should never get here!');
   }
 
+  function update_end_of_block_marker(state, footnoteId) {
+    // inject marker into parent = block level token stream to announce the advent of an (inline) footnote:
+    // because the markdown_it code uses a for() loop to go through the parent nodes while parsing the
+    // 'inline' chunks, we CANNOT safely inject a marker BEFORE the chunk, only AFTERWARDS:
+    let parentState = state.env.parentState;
+    let parentIndex = state.env.parentTokenIndex;
+    let markerTokenIndex = find_end_of_block_marker(parentState.tokens, parentIndex + 1);
+    let token = parentState.tokens[markerTokenIndex];
+    if (!token.meta) token.meta = {};
+    if (!token.meta.footnote_list) token.meta.footnote_list = [];
+    token.meta.footnote_list.push(footnoteId);
+  } // Mark end of paragraph/heading/whatever BLOCK (or rather: START of the next block!)
+
 
   function footnote_mark_end_of_block(state, startLine, endLine, silent) {
     if (!silent && state.tokens.length > 0) {
@@ -490,12 +503,7 @@ function footnote_plugin(md, plugin_options) {
       // because the markdown_it code uses a for() loop to go through the parent nodes while parsing the
       // 'inline' chunks, we CANNOT safely inject a marker BEFORE the chunk, only AFTERWARDS:
 
-      let parentIndex = state.env.parentTokenIndex;
-      let markerTokenIndex = find_end_of_block_marker(parentState.tokens, parentIndex + 1);
-      token = parentState.tokens[markerTokenIndex];
-      if (!token.meta) token.meta = {};
-      if (!token.meta.footnote_list) token.meta.footnote_list = [];
-      token.meta.footnote_list.push(footnoteId); //md.block.ruler.enable('footnote_mark_end_of_block');
+      update_end_of_block_marker(state, footnoteId); //md.block.ruler.enable('footnote_mark_end_of_block');
     }
 
     state.pos = labelEnd + 1;
@@ -594,7 +602,8 @@ function footnote_plugin(md, plugin_options) {
         subId: footnoteSubId,
         label,
         text
-      }; //md.block.ruler.enable('footnote_mark_end_of_block');
+      };
+      update_end_of_block_marker(state, footnoteId); //md.block.ruler.enable('footnote_mark_end_of_block');
     }
 
     state.pos = pos;
@@ -687,7 +696,8 @@ function footnote_plugin(md, plugin_options) {
         id: footnoteId,
         subId: footnoteSubId,
         label
-      }; //md.block.ruler.enable('footnote_mark_end_of_block');
+      };
+      update_end_of_block_marker(state, footnoteId); //md.block.ruler.enable('footnote_mark_end_of_block');
     }
 
     state.pos = pos;
@@ -711,7 +721,7 @@ function footnote_plugin(md, plugin_options) {
     console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL');
 
     if (!state.env.footnotes) {
-      // filter out all 'footnote_mark_end_of_block' chunks:
+      // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
       state.tokens = state.tokens.filter(function (tok, idx) {
         if (tok.type === 'footnote_mark_end_of_block') {
           return false;

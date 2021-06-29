@@ -434,12 +434,7 @@ export default function footnote_plugin(md, plugin_options) {
       // inject marker into parent = block level token stream to announce the advent of an (inline) footnote:
       // because the markdown_it code uses a for() loop to go through the parent nodes while parsing the
       // 'inline' chunks, we CANNOT safely inject a marker BEFORE the chunk, only AFTERWARDS:
-      let parentIndex = state.env.parentTokenIndex;
-      let markerTokenIndex = find_end_of_block_marker(parentState.tokens, parentIndex + 1);
-      token = parentState.tokens[markerTokenIndex];
-      if (!token.meta) token.meta = {};
-      if (!token.meta.footnote_list) token.meta.footnote_list = [];
-      token.meta.footnote_list.push(footnoteId);
+      update_end_of_block_marker(state, footnoteId);
 
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
@@ -509,6 +504,8 @@ export default function footnote_plugin(md, plugin_options) {
         text
       };
 
+      update_end_of_block_marker(state, footnoteId);
+
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
 
@@ -573,6 +570,8 @@ export default function footnote_plugin(md, plugin_options) {
         label
       };
 
+      update_end_of_block_marker(state, footnoteId);
+
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
 
@@ -590,7 +589,7 @@ export default function footnote_plugin(md, plugin_options) {
 
     console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL');
     if (!state.env.footnotes) {
-      // filter out all 'footnote_mark_end_of_block' chunks:
+      // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
       state.tokens = state.tokens.filter(function (tok, idx) {
         if (tok.type === 'footnote_mark_end_of_block') { return false; }
         return true;
@@ -608,6 +607,7 @@ export default function footnote_plugin(md, plugin_options) {
     // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
     let aside_list = [];
     let section_list = [];
+    let end_list = [];
 
     // extract the tokens constituting the footnote/sidenote *content* and
     // store that bunch in `refTokens[:<currentLabel>]` instead, to be injected back into
