@@ -859,11 +859,7 @@ function footnote_plugin(md, plugin_options) {
   md.inline.ruler.after('image', 'footnote_inline', footnote_inline);
   md.inline.ruler.after('footnote_inline', 'footnote_ref_with_text', footnote_ref_with_text);
   md.inline.ruler.after('footnote_ref_with_text', 'footnote_ref', footnote_ref);
-  md.core.ruler.after('inline', 'footnote_tail', footnote_tail); //throw 1;
-
-  console.log({
-    par: md.block.ruler.__rules__
-  });
+  md.core.ruler.after('inline', 'footnote_tail', footnote_tail);
 }
 
 export default footnote_plugin;
