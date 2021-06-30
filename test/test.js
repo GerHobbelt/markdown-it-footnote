@@ -39,8 +39,6 @@ function generate(fixturePath, md, env) {
           fs.writeFileSync(diagnostic_filename_base + '.html', html_rv, 'utf8');
           delete test_env.state_block.env;
           fs.writeFileSync(diagnostic_filename_base + '.dump.json', JSON.stringify(test_env, null, 2), 'utf8');
-          fs.writeFileSync(diagnostic_filename_base + '.dump1.json', JSON.stringify(test_env.state_block.tokens, null, 2), 'utf8');
-          fs.writeFileSync(diagnostic_filename_base + '.dump2.json', JSON.stringify(test_env.state_block.tokens2, null, 2), 'utf8');
           // add variant character after "↩", so we don't have to worry about
           // invisible characters in tests
           assert.strictEqual(

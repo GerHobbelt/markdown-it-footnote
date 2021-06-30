@@ -616,17 +616,13 @@ export default function footnote_plugin(md, plugin_options) {
     // extract the tokens constituting the footnote/sidenote *content* and
     // store that bunch in `refTokens[:<currentLabel>]` instead, to be injected back into
     // the tokenstream at the appropriate spots.
-    let newtokenlist = state.tokens.filter(function (tok, idx) {
+    state.tokens = state.tokens.filter(function (tok, idx) {
       switch (tok.type) {
       // filter out 'footnote_mark_end_of_block' tokens which follow BLOCKS that do not contain any
       // footnote/sidenote/endnote references:
       case 'footnote_mark_end_of_block':
-        if (!tok.meta || !tok.meta.footnote_list) {
-          console.error('################ filter:', idx);
-          tok.FILTERED = true;
-          return false;
-        }
-        console.error('######### keep:', { idx, tok });
+        if (!tok.meta) return false;
+        if (!tok.meta.footnote_list) return false;
         break;
 
       case 'footnote_reference_open':
@@ -653,13 +649,6 @@ export default function footnote_plugin(md, plugin_options) {
       }
       return !insideRef;
     });
-    console.error('################## filtered arrays:', newtokenlist.length, state.tokens.length);
-    try {
-      throw new Error('xx');
-    } catch (ex) {
-      console.error(ex);
-    }
-    state.tokens = newtokenlist;
 
     lastRefIndex = plugin_options.atDocumentEnd ? state.tokens.length : state.tokens.length;
 
@@ -738,23 +727,9 @@ export default function footnote_plugin(md, plugin_options) {
     inject_tokens.push(token);
     state.tokens.splice(lastRefIndex, 0, ...inject_tokens);
 
-    console.error('################## REFACTOR: tokens spliced in:', state.tokens.length);
-    state.tokens = state.tokens.filter(function (tok, idx) {
-      // filter out 'footnote_mark_end_of_block' tokens which follow BLOCKS that do not contain any
-      // footnote/sidenote/endnote references:
-      if (tok.type === 'footnote_mark_end_of_block') {
-        if (!tok.meta || !tok.meta.footnote_list) {
-          console.error('################ filter BBB:', idx);
-          //tok.FILTERED = true;
-          return false;
-        }
-      }
-      return true;
-    });
-    console.error('################## REFACTOR: tokens post cruft filter:', state.tokens.length, state.env.state_block.tokens.length);
-
-    // Update state_block too as we have rewritten the token array:
-    state.env.state_block.tokens2 = state.tokens;
+    // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
+    // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
+    state.env.state_block.tokens = state.tokens;
   }
 
   // attach ourselves to the start of block handling too
