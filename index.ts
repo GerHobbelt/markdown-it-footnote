@@ -202,7 +202,7 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_anchor(tokens, idx, options, env, slf) {
-    let refid = render_footnote_n(tokens, idx);
+    let refid = render_footnote_n(tokens, idx, false);
     refid = plugin_options.anchorFn(refid, false, tokens, idx, options, env, slf);
 
     /* ↩ with escape code to prevent display as Apple Emoji on iOS */

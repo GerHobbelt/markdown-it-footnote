@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import plugin from '../index.js';
+import plugin from '../dist/markdownitFootnote.js';
 
 
 // Most of the rest of this is inlined from generate(), but modified
