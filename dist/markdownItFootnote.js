@@ -42,31 +42,61 @@ function render_sidenote_close() {
 */
 
 
+const default_plugin_options = {
+  // atDocumentEnd: false,               -- obsoleted option of the original plugin
+  anchorFn: anchorFnDefault,
+  captionFn: captionFnDefault,
+  headerFn: headerFnDefault,
+  // see also https://www.editage.com/insights/footnotes-in-tables-part-1-choice-of-footnote-markers-and-their-sequence
+  // why asterisk/star is not part of the default footnote marker sequence.
+  //
+  // For similar reasons, we DO NOT include the section § symbol in this list.
+  //
+  // when numberSequnce is NULL/empty, a regular numerical numbering is assumed.
+  // Otherwise, the array is indexed; when there are more footnotes than entries in
+  // the numberSequence array, the entries are re-used, but doubled/trippled, etc.
+  //
+  // When the indexing in this array hits a NUMERIC value (as last entry), any higher
+  // footnotes are NUMBERED starting at that number.
+  //
+  // NOTE: as we can reference the same footnote from multiple spots, we do not depend
+  // on CSS counter() approaches by default, but providee this mechanism in the plugin
+  // code itself.
+  numberSequence: ['†', '‡', '††', '‡‡', '¶', 1],
+  // Overrides the footnode mode when set to one of the following:
+  //
+  // Recognized 'modes':
+  // '>': aside note (default for inline notes)
+  // ':': end node
+  // '=': section note (default for regular referenced notes)
+  //
+  modeOverride: null
+};
 function footnote_plugin(md, plugin_options) {
   let parseLinkLabel = md.helpers.parseLinkLabel,
       isSpace = md.utils.isSpace;
-  plugin_options = Object.assign({}, plugin_options, {
-    atDocumentEnd: false,
-    anchorFn: anchorFnDefault,
-    captionFn: captionFnDefault,
-    headerFn: headerFnDefault,
-    // see also https://www.editage.com/insights/footnotes-in-tables-part-1-choice-of-footnote-markers-and-their-sequence
-    // why asterisk/star is not part of the default footnote marker sequence.
-    //
-    // For similar reasons, we DO NOT include the section § symbol in this list.
-    //
-    // when numberSequnce is NULL/empty, a regular numerical numbering is assumed.
-    // Otherwise, the array is indexed; when there are more footnotes than entries in
-    // the numberSequence array, the entries are re-used, but doubled/trippled, etc.
-    //
-    // When the indexing in this array hits a NUMERIC value (as last entry), any higher
-    // footnotes are NUMBERED starting at that number.
-    //
-    // NOTE: as we can reference the same footnote from multiple spots, we do not depend
-    // on CSS counter() approaches by default, but providee this mechanism in the plugin
-    // code itself.
-    numberSequence: ['†', '‡', '††', '‡‡', '¶', 1]
-  });
+  plugin_options = Object.assign({}, plugin_options, default_plugin_options);
+
+  function determine_mode(mode, default_mode) {
+    if (plugin_options.modeOverride && '>:='.includes(plugin_options.modeOverride)) {
+      return {
+        mode: plugin_options.modeOverride,
+        fromInput: false
+      };
+    }
+
+    if ('>:='.includes(mode)) {
+      return {
+        mode,
+        fromInput: true
+      };
+    }
+
+    return {
+      mode: default_mode,
+      fromInput: false
+    };
+  }
 
   function determine_footnote_symbol(idx) {
     if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) {
@@ -322,13 +352,10 @@ function footnote_plugin(md, plugin_options) {
         return false;
       }
 
-    let mode = state.src[pos + 1];
+    let mode_rec = determine_mode(state.src[pos + 1], '='); // default mode is section_note mode.
 
-    if ('>:='.includes(mode)) {
-      pos++;
-    } else {
-      mode = '='; // default mode is section_note mode.
-    }
+    if (mode_rec.fromInput) pos++;
+    let mode = mode_rec.mode;
 
     if (pos + 1 >= max || state.src.charCodeAt(++pos) !== 0x20
     /* space */
@@ -456,14 +483,10 @@ function footnote_plugin(md, plugin_options) {
     // like this: `[@Belawog2012]` i.e. no '^' in there. Hence these can safely co-exist.)
     //
 
-    let mode = state.src[start + 2];
+    let mode_rec = determine_mode(state.src[start + 2], '>'); // default mode is aside ~ sidenote mode.
 
-    if ('>:='.includes(mode)) {
-      labelStart++;
-    } else {
-      mode = '>';
-    }
-
+    if (mode_rec.fromInput) labelStart++;
+    let mode = mode_rec.mode;
     labelEnd = parseLinkLabel(state, start + 1); // parser failed to find ']', so it's not a valid note
 
     if (labelEnd < 0) {
@@ -709,7 +732,7 @@ function footnote_plugin(md, plugin_options) {
     state.pos = pos;
     state.posMax = max;
     return true;
-  } // Glue footnote tokens to end of token stream
+  } // Glue footnote tokens into appropriate slots of token stream.
 
 
   function footnote_tail(state, startLine, endLine, silent) {
