@@ -79,7 +79,6 @@ const default_plugin_options = {
   // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
   sortOrder: 2
 };
-
 function footnote_plugin(md, plugin_options) {
   let parseLinkLabel = md.helpers.parseLinkLabel,
       isSpace = md.utils.isSpace;
@@ -106,45 +105,42 @@ function footnote_plugin(md, plugin_options) {
     };
   }
 
-  // `footnoteId` is 1-based, not 0-based
-  function determine_footnote_symbol(footnoteId) {
+  function determine_footnote_symbol(idx) {
     if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) {
-      return footnoteId;
+      return idx + 1;
     }
 
     const len = plugin_options.numberSequence.length;
 
-    if (footnoteId > len) {
+    if (idx >= len) {
       // is last slot numeric or alphabetical?
       let slot = plugin_options.numberSequence[len - 1];
 
       if (Number.isFinite(slot)) {
-        let delta = footnoteId - len;
+        let delta = idx - len + 1;
         return slot + delta;
-      } 
+      } // non-numerical last slot --> duplicate, triplicate, etc.
 
-      // non-numerical last slot --> duplicate, triplicate, etc.
 
-      let idx = footnoteId - 1;
-      let dupli = (idx / len) | 0; // = int(x mod N)
+      let dupli = idx / len | 0; // = int(x mod N)
 
       let remainder = idx % len;
       let core = plugin_options.numberSequence[remainder];
       let str = core;
 
-      for (let i = 0; i < dupli; i++) {
+      for (let i = 1; i < dupli; i++) {
         str += core;
       }
 
       return str;
     }
 
-    return plugin_options.numberSequence[footnoteId - 1];
+    return plugin_options.numberSequence[idx];
   }
 
   function render_footnote_n(tokens, idx, excludeSubId) {
-    let footnoteId = tokens[idx].meta.id;
-    let n = '' + footnoteId; // = footnoteId.toString();
+    let mark = tokens[idx].meta.id + 1;
+    let n = '' + mark; // = mark.toString();
 
     if (!excludeSubId && tokens[idx].meta.subId > 0) {
       n += '-' + tokens[idx].meta.subId;
@@ -181,9 +177,7 @@ function footnote_plugin(md, plugin_options) {
   function render_footnote_ref(tokens, idx, options, env, slf) {
     let id = render_footnote_anchor_name(tokens, idx, options, env, slf);
     let caption = render_footnote_caption(tokens, idx, options, env, slf);
-    let refid = render_footnote_anchor_nameRef(tokens, idx, options, env, slf); 
-
-    // check if multiple footnote references are bunched together:
+    let refid = render_footnote_anchor_nameRef(tokens, idx, options, env, slf); // check if multiple footnote references are bunched together:
     // IFF they are, we should separate them with commas.
     //
     // Exception: when next token has an extra text (`meta.text`) the
@@ -230,9 +224,7 @@ function footnote_plugin(md, plugin_options) {
 
   function render_footnote_open(tokens, idx, options, env, slf) {
     let id = render_footnote_anchor_name(tokens, idx, options, env, slf);
-    let caption = render_footnote_caption(tokens, idx, options, env, slf); 
-
-    // allow both a JavaScript --> CSS approach via `data-footnote-caption`
+    let caption = render_footnote_caption(tokens, idx, options, env, slf); // allow both a JavaWScript --> CSS approach via `data-footnote-caption`
     // and a classic CSS approach while a display:inline-block SUP presenting
     // the LI 'button' instead:
 
