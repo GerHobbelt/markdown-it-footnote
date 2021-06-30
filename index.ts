@@ -279,7 +279,7 @@ export default function footnote_plugin(md, plugin_options) {
     let infoRec;
     // label as index: prepend ':' to avoid conflict with Object.prototype members
     if (label == null || !env.footnotes.refs[':' + label]) {
-      footnoteId = env.footnotes.list.length + 1;
+      footnoteId = Math.max(1, env.footnotes.list.length);
       infoRec = {
         id: footnoteId,
         label,
