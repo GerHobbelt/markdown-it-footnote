@@ -1,6 +1,8 @@
 // Process footnotes
 //
 
+import * as assert from 'assert';
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Renderer partials
@@ -74,6 +76,14 @@ const default_plugin_options = {
   // '=': section note (default for regular referenced notes)
   //
   modeOverride: null,
+
+  // list section notes and endnotes in order of:
+  //
+  // 0: first *appearance* in the text
+  // 1: first *reference* in the text
+  // 2: *definition* in the text
+  // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
+  sortOrder: 2,
 }
 
 export default function footnote_plugin(md, plugin_options) {
@@ -140,8 +150,8 @@ export default function footnote_plugin(md, plugin_options) {
 
   function render_footnote_mark(tokens, idx, env) {
     let token = tokens[idx];
-    let info = env.footnotes.list[token.meta.id] || {};
-    let labelOverride = info.labelOverride;
+    let info = env.footnotes.list[token.meta.id];
+    let labelOverride = info?.labelOverride;
     let mark = labelOverride || determine_footnote_symbol(token.meta.id);
     let n = '' + mark; // = mark.toString();
     return n;
@@ -250,6 +260,47 @@ export default function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_close        = render_footnote_close;
   md.renderer.rules.footnote_anchor       = render_footnote_anchor;
 
+  function obtain_footnote_info_slot(env, label?: string) {
+    if (!env.footnotes) { 
+      env.footnotes = { 
+        // map label tto ID:
+        refs: {},  
+        // store footnote info indexed by ID
+        list: [], 
+        //TODO: remap ID to re-ordered ID (determines placement order for section notes and endnotes)
+        idMap: [], 
+      }; 
+    }
+
+    // When label is NULL, this is a request from in INLINE NOTE.
+
+    // NOTE: IDs are index numbers, BUT they start at 1 instead of 0 to make life easier in check code:
+    let footnoteId;
+    let infoRec;
+    // label as index: prepend ':' to avoid conflict with Object.prototype members
+    if (label == null || !env.footnotes.refs[':' + label]) {
+      footnoteId = env.footnotes.list.length + 1;
+      infoRec = {
+        id: footnoteId,
+        label,
+        labelOverride: null,
+        mode: null,
+        content: null,
+        tokens: null,
+        count: 0
+      };
+      env.footnotes.list[footnoteId] = infoRec;
+      if (label != null) {
+        env.footnotes.refs[':' + label] = footnoteId;
+      }
+    } else {
+      footnoteId = env.footnotes.refs[':' + label];
+      infoRec = env.footnotes.list[footnoteId];
+      console.assert(!!infoRec, "expects non-NULL footnote info record");
+    }
+    return infoRec;
+  }
+
   function find_end_of_block_marker(state, startIndex) {
     let idx, len;
     let tokens = state.tokens;
@@ -326,8 +377,6 @@ export default function footnote_plugin(md, plugin_options) {
     if (silent) { return true; }
     pos++;
 
-    if (!state.env.footnotes) { state.env.footnotes = {}; }
-    if (!state.env.footnotes.refs) { state.env.footnotes.refs = {}; }
     label = state.src.slice(start + 2, labelEnd);
     let text;
     if (label.match(/^(\S+)\s+(.+)$/)) {
@@ -336,14 +385,30 @@ export default function footnote_plugin(md, plugin_options) {
     }
 
     console.error('extracted label = ', { label, text, labelEnd, pos, start });
-    state.env.footnotes.refs[':' + label] = -1;
+
+    // Now see if we already have a footnote ID for this footnote label:
+    // fetch it if we have one and otherwise produce a new one so everyone
+    // can use this from now on. 
+    //
+    // This scenario is possible when the footnote *definition* comes BEFORE
+    // the first actual footnote *use* (*reference*). This is UNUSUAL when people
+    // write texts, but it is *not impossible*, particularly now that we have
+    // specified-by-design that endnotes can be marked as such (`[^label]:: note text`)
+    // and freely mixed with sidenotes (`[^label]:> note text`) and section 
+    // notes (`[^label]:= note text` (explicit mode) or `[^label]: note text` 
+    // (implicit mode)), where *section notes* will placed at the spot in the text
+    // flow where they were *defined*. Again, highly irregular, BUT someone MAY
+    // feel the need to place some section note *definitions* ABOVE their first
+    // use point.
+    //
+    let infoRec = obtain_footnote_info_slot(state.env, label);
+
+    infoRec.labelOverride = text;
+    infoRec.mode = mode;
 
     token = state.push('footnote_reference_open', '', 1);
     token.meta = {
-      id: -1,
-      label,
-      labelOverride: text,
-      mode
+      id: infoRec.id,
     };
     token.hidden = true;
 
@@ -391,6 +456,9 @@ export default function footnote_plugin(md, plugin_options) {
     state.bMarks[startLine] = oldBMark;
 
     token = state.push('footnote_reference_close', '', -1);
+    token.meta = {
+      id: infoRec.id,
+    };
 
     return true;
   }
@@ -399,7 +467,6 @@ export default function footnote_plugin(md, plugin_options) {
   function footnote_inline(state, silent) {
     let labelStart,
         labelEnd,
-        footnoteId,
         token,
         tokens,
         max = state.posMax,
@@ -443,19 +510,17 @@ export default function footnote_plugin(md, plugin_options) {
       // handler to be able to access them afterwards!
       let parentState = state.env.parentState;
       let parentEnv = parentState.env;
-      if (!parentEnv.footnotes) { parentEnv.footnotes = {}; }
-      if (!parentEnv.footnotes.list) { parentEnv.footnotes.list = []; }
-      footnoteId = parentEnv.footnotes.list.length;
 
       // WARNING: claim our footnote slot for there MAY be nested footnotes
       // discovered in the next inline.parse() call below!
-      parentEnv.footnotes.list[footnoteId] = null;
+      let infoRec = obtain_footnote_info_slot(parentEnv, null);
+      infoRec.mode = mode;
+      infoRec.count++;
 
       token = state.push('footnote_ref', '', 0);
       //token.meta = { id: footnoteId, subId: 0, label: null };
       token.meta = {
-        id: footnoteId,
-        mode
+        id: infoRec.id,
       };
 
       state.md.inline.parse(
@@ -466,16 +531,13 @@ export default function footnote_plugin(md, plugin_options) {
       );
 
       // Now fill our previously claimed slot:
-      parentEnv.footnotes.list[footnoteId] = {
-        content: state.src.slice(labelStart, labelEnd),
-        tokens,
-        mode
-      };
+      infoRec.content = state.src.slice(labelStart, labelEnd);
+      infoRec.tokens = tokens;
 
       // inject marker into parent = block level token stream to announce the advent of an (inline) footnote:
       // because the markdown_it code uses a for() loop to go through the parent nodes while parsing the
       // 'inline' chunks, we CANNOT safely inject a marker BEFORE the chunk, only AFTERWARDS:
-      update_end_of_block_marker(state, footnoteId);
+      update_end_of_block_marker(state, infoRec.id);
 
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
@@ -489,7 +551,6 @@ export default function footnote_plugin(md, plugin_options) {
   function footnote_ref_with_text(state, silent) {
     let label,
         pos,
-        footnoteId,
         footnoteSubId,
         token,
         max = state.posMax,
@@ -498,7 +559,6 @@ export default function footnote_plugin(md, plugin_options) {
     // should be at least 6 chars - "[^l x]"
     if (start + 5 > max) { return false; }
 
-    if (!state.env.footnotes || !state.env.footnotes.refs) { return false; }
     if (state.src.charCodeAt(start) !== 0x5B/* [ */) { return false; }
     if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) { return false; }
 
@@ -518,34 +578,20 @@ export default function footnote_plugin(md, plugin_options) {
     label = RegExp.$1;
     let text = RegExp.$2;
 
-    if (typeof state.env.footnotes.refs[':' + label] === 'undefined') { return false; }
+    let infoRec = obtain_footnote_info_slot(state.env, label);
 
     if (!silent) {
-      if (!state.env.footnotes.list) { state.env.footnotes.list = []; }
+      footnoteSubId = infoRec.count;
 
-      if (state.env.footnotes.refs[':' + label] < 0) {
-        footnoteId = state.env.footnotes.list.length;
-        state.env.footnotes.list[footnoteId] = {
-          label,
-          count: 0
-        };
-        state.env.footnotes.refs[':' + label] = footnoteId;
-      } else {
-        footnoteId = state.env.footnotes.refs[':' + label];
-      }
-
-      footnoteSubId = state.env.footnotes.list[footnoteId].count;
-      state.env.footnotes.list[footnoteId].count++;
+      infoRec.count++;
 
       token = state.push('footnote_ref', '', 0);
       token.meta = {
-        id: footnoteId,
+        id: infoRec.id,
         subId: footnoteSubId,
-        label,
-        text
       };
 
-      update_end_of_block_marker(state, footnoteId);
+      update_end_of_block_marker(state, infoRec.id);
 
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
@@ -559,7 +605,6 @@ export default function footnote_plugin(md, plugin_options) {
   function footnote_ref(state, silent) {
     let label,
         pos,
-        footnoteId,
         footnoteSubId,
         token,
         max = state.posMax,
@@ -568,7 +613,6 @@ export default function footnote_plugin(md, plugin_options) {
     // should be at least 4 chars - "[^x]"
     if (start + 3 > max) { return false; }
 
-    if (!state.env.footnotes || !state.env.footnotes.refs) { return false; }
     if (state.src.charCodeAt(start) !== 0x5B/* [ */) { return false; }
     if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) { return false; }
 
@@ -585,33 +629,21 @@ export default function footnote_plugin(md, plugin_options) {
     pos++;
 
     label = state.src.slice(start + 2, pos - 1);
-    if (typeof state.env.footnotes.refs[':' + label] === 'undefined') { return false; }
+
+    let infoRec = obtain_footnote_info_slot(state.env, label);
 
     if (!silent) {
-      if (!state.env.footnotes.list) { state.env.footnotes.list = []; }
-
-      if (state.env.footnotes.refs[':' + label] < 0) {
-        footnoteId = state.env.footnotes.list.length;
-        state.env.footnotes.list[footnoteId] = {
-          label,
-          count: 0
-        };
-        state.env.footnotes.refs[':' + label] = footnoteId;
-      } else {
-        footnoteId = state.env.footnotes.refs[':' + label];
-      }
-
-      footnoteSubId = state.env.footnotes.list[footnoteId].count;
-      state.env.footnotes.list[footnoteId].count++;
+      footnoteSubId = infoRec.count;
+      
+      infoRec.count++;
 
       token = state.push('footnote_ref', '', 0);
       token.meta = {
-        id: footnoteId,
+        id: infoRec.id,
         subId: footnoteSubId,
-        label
       };
 
-      update_end_of_block_marker(state, footnoteId);
+      update_end_of_block_marker(state, infoRec.id);
 
       //md.block.ruler.enable('footnote_mark_end_of_block');
     }
@@ -641,6 +673,8 @@ export default function footnote_plugin(md, plugin_options) {
     let section_list = [];
     let end_list = [];
 
+    let list = state.env.footnotes.list;
+
     // extract the tokens constituting the footnote/sidenote *content* and
     // store that bunch in `refTokens[:<currentLabel>]` instead, to be injected back into
     // the tokenstream at the appropriate spots.
@@ -657,18 +691,19 @@ export default function footnote_plugin(md, plugin_options) {
         insideRef = true;
         current = [];
         currentRefToken = tok;
+/*
         if (tok.meta.mode === '>') {
           aside_list.push(idx);
         }
+*/
         return true;
 
       case 'footnote_reference_close':
         insideRef = false;
-        // prepend ':' to avoid conflict with Object.prototype members
-        refTokens[':' + currentRefToken.meta.label] = {
-          tokens: current,
-          meta: currentRefToken.meta
-        };
+
+        let infoRec = list[tok.meta.id];
+        infoRec.tokens = current;
+
         return true;
       }
       if (insideRef) {
@@ -677,21 +712,22 @@ export default function footnote_plugin(md, plugin_options) {
       return !insideRef;
     });
 
-    let list = state.env.footnotes.list;
-    if (!list) { return; }
-
     let inject_tokens = [];
 
     token = new state.Token('footnote_block_open', '', 1);
     token.markup = plugin_options.headerFn(state);
     inject_tokens.push(token);
 
-    for (i = 0, l = list.length; i < l; i++) {
+    // REMEMBER: we're indexing from 1 for footnote IDs instead of from zero(0),
+    // so the first slot (`list[0]`) will be NULL:
+    console.error("!!!!!!!!!!!!! list:", list)
+    for (i = 1, l = list.length; i < l; i++) {
       let fn = list[i];
+      let inject_start_index = inject_tokens.length;
+
       token      = new state.Token('footnote_open', '', 1);
       token.meta = {
         id: i,
-        label: fn.label
       };
       inject_tokens.push(token);
 
@@ -711,13 +747,7 @@ export default function footnote_plugin(md, plugin_options) {
         inject_tokens.push(token);
       } else if (fn.label) {
         // process a labeled footnote:
-        let info = refTokens[':' + fn.label] || {};
-        inject_tokens = inject_tokens.concat(info.tokens || []);
-        if (info.meta) {
-          // also update the global footnote info list:
-          fn.labelOverride = info.meta.labelOverride;
-          fn.mode = info.meta.mode;
-        }
+        inject_tokens = inject_tokens.concat(fn.tokens || []);
       } else {
         // nothing to inject
         throw Error('unexpected: should never get here!');
@@ -729,23 +759,31 @@ export default function footnote_plugin(md, plugin_options) {
         lastParagraph = null;
       }
 
-      t = Math.max(fn.count, 1);
-      for (j = 0; j < t; j++) {
-        token = new state.Token('footnote_anchor', '', 0);
+      t = fn.count;
+      if (t < 1) {
+        console.error(`footnote ID ${i} is defined but never used. Footnote will be removed from the output!`, fn);
+        inject_tokens = inject_tokens.slice(0, inject_start_index);
+      }
+      else {
+        for (j = 0; j < t; j++) {
+          token = new state.Token('footnote_anchor', '', 0);
+          token.meta = {
+            id: i,
+            subId: j,
+          };
+          inject_tokens.push(token);
+        }
+
+        if (lastParagraph) {
+          inject_tokens.push(lastParagraph);
+        }
+
+        token = new state.Token('footnote_close', '', -1);
         token.meta = {
           id: i,
-          subId: j,
-          label: fn.label
         };
         inject_tokens.push(token);
       }
-
-      if (lastParagraph) {
-        inject_tokens.push(lastParagraph);
-      }
-
-      token = new state.Token('footnote_close', '', -1);
-      inject_tokens.push(token);
     }
 
     token = new state.Token('footnote_block_close', '', -1);
