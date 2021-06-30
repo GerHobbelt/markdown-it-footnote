@@ -744,7 +744,6 @@ function footnote_plugin(md, plugin_options) {
         token,
         current,
         currentRefToken,
-        lastRefIndex = 0,
         insideRef = false,
         refTokens = {};
     console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL');
@@ -782,7 +781,6 @@ function footnote_plugin(md, plugin_options) {
             tokens: current,
             meta: currentRefToken.meta
           };
-          lastRefIndex = idx;
           return true;
       }
 
@@ -792,7 +790,6 @@ function footnote_plugin(md, plugin_options) {
 
       return !insideRef;
     });
-    lastRefIndex = plugin_options.atDocumentEnd ? state.tokens.length : state.tokens.length;
     let list = state.env.footnotes.list;
 
     if (!list) {
@@ -868,7 +865,7 @@ function footnote_plugin(md, plugin_options) {
 
     token = new state.Token('footnote_block_close', '', -1);
     inject_tokens.push(token);
-    state.tokens.splice(lastRefIndex, 0, ...inject_tokens); // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
+    state.tokens.splice(state.tokens.length, 0, ...inject_tokens); // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
 
     state.env.state_block.tokens = state.tokens;
