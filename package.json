@@ -11,8 +11,10 @@
   "repository": "GerHobbelt/markdown-it-footnote",
   "license": "MIT",
   "type": "module",
-  "source": "index.js",
+  "source": "index.ts",
   "main": "dist/markdownItFootnote.js",
+  "module": "dist/markdownItFootnote.modern.js",
+  "types": "dist/markdownItFootnote.d.ts",
   "engines": {
     "node": ">=12.20.0"
   },
