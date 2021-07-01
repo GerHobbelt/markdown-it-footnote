@@ -23,7 +23,7 @@ css: |
         list-style-type: none;
         /* position:  relative; */
 
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid #adadad;
         margin-left: 0;
     }
     span.footnote-caption {
@@ -32,14 +32,17 @@ css: |
         margin-left:  -2.2em;
 
         margin-top: -1px;
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid #adadad;
 
         font-weight: bold;
 
         /* use gradient to fake a bar that cannot be placed there with border style,
-           because we want the top border to continue uninterrupted along the entire width of float+LI. */
-        background-color: #f3f3f3;
-        background: linear-gradient(90deg, #f3f3f3 0%, #f3f3f3 81%, rgba(255,128,0,1) 81%, rgba(255,128,0,1) 93%, rgba(255,255,255,1) 93%, rgba(255,255,255,1) 100%);
+           because we want the top border to continue uninterrupted along the entire width of float+LI.
+
+           [Edit:]Now this same technique is used to accentuate the caption a tad while the UL
+           has been pressed into service for rendering that desired 'bar' as we want it to span
+           the entire height of the footnote! */
+        background: linear-gradient(90deg, #f3f3f3 0%, #f3f3f3 1.75em, rgba(255,255,255,0) 1.75em, rgba(255,255,255,0) 100%);
         width: 2.2em;
         box-sizing: border-box;
         display: block;
@@ -61,6 +64,32 @@ css: |
         font-size:  65%;
         vertical-align: bottom;
         padding-left: 0.5em;
+    }
+
+    /* rendering sidenotes, section notes' sections and endnote sections: */
+    hr.footnotes-sep {
+        display:  none;
+    }
+    section.footnotes {
+        padding-left: 0.5em;
+        border-left: solid 2em orange;
+        padding-top: 0.2em;
+        padding-bottom: 0.2em;
+        border-top: solid 4px #ff9614;
+        border-bottom: solid 1px #f1b694;
+        margin-top: 0.5em;
+        margin-bottom: 2em;
+    }
+    section.footnotes > ul.footnotes-list {
+        margin-top: 0;
+        margin-bottom: -1em;  /* correct for P tag's margin-block-end: 1em */
+
+        /* use gradient to fake a bar that cannot be placed there with border style,
+           because we want the footnote marker to stick out to the other side of this 'border'. */
+        background: linear-gradient(90deg, #f3f3f3 0%, #f3f3f3 1.75em, rgb(255,128,0) 1.75em, rgb(255,128,0) 2em, rgb(255,255,255) 2em, rgb(255,255,255) 100%);
+
+        /* make space for the footnote caption FLOAT: */
+        padding-left: 2.2em;
     }
     </style>
 ------
