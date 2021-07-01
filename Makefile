@@ -27,8 +27,8 @@ bundle:
 	-rm -rf ./dist
 	mkdir dist
 	microbundle --no-compress --target node --strict --name ${GLOBAL_NAME} -f modern
-	mv dist/${GLOBAL_NAME}.modern.js dist/${GLOBAL_NAME}.js
-	mv dist/${GLOBAL_NAME}.modern.js.map dist/${GLOBAL_NAME}.js.map
+	mv dist/${BUNDLE_NAME}.modern.js dist/${BUNDLE_NAME}.js
+	mv dist/${BUNDLE_NAME}.modern.js.map dist/${BUNDLE_NAME}.js.map
 	npx prepend-header 'dist/*js' support/header.js
 
 test:
