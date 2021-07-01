@@ -20,15 +20,15 @@ function captionFnDefault(n, tokens, idx, options, env, slf) {
   return '' + n;
 }
 
-function headerFnDefault(state, mode) {
-  switch (mode) {
-  case '>':
+function headerFnDefault(state, category) {
+  switch (category) {
+  case 'aside':
     return 'Side Notes';
 
-  case '=':
+  case 'section':
     return 'Section Notes';
 
-  case ':':
+  case 'end':
     return 'Endnotes';
   }
   return '';
@@ -215,25 +215,25 @@ export default function footnote_plugin(md, plugin_options) {
 
   function render_footnote_block_open(tokens, idx, options) {
     const header = tokens[idx].markup;
-    const mode = tokens[idx].meta.mode;
-    switch (mode) {
-    case '>':
-      return '<aside class="footnotes">\n' +
+    const category = tokens[idx].meta.category;
+    switch (category) {
+    case 'aside':
+      return `<aside class="footnotes" id="fnsection-${ tokens[idx].meta.sectionId }">\n` +
              (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
            '<ul class="footnotes-list">\n';
 
     default:
-      return (options.xhtmlOut ? '<hr class="footnotes-sep" />\n' : '<hr class="footnotes-sep">\n') +
-           '<section class="footnotes">\n' +
+      return (options.xhtmlOut ? `<hr class="footnotes-sep" id="fnsection-hr-${ tokens[idx].meta.sectionId }" />\n` : `<hr class="footnotes-sep" id="fnsection-hr-${ tokens[idx].meta.sectionId }">\n`) +
+           `<section class="footnotes" id="fnsection-${ tokens[idx].meta.sectionId }">\n` +
              (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
            '<ul class="footnotes-list">\n';
     }
   }
 
   function render_footnote_block_close(tokens, idx, options) {
-    const mode = tokens[idx].meta.mode;
-    switch (mode) {
-    case '>':
+    const category = tokens[idx].meta.category;
+    switch (category) {
+    case 'aside':
       return '</ul>\n</aside>\n';
 
     default:
@@ -295,7 +295,11 @@ export default function footnote_plugin(md, plugin_options) {
         list: [],
         // remap ID to re-ordered ID (determines placement order for section notes and endnotes)
         idMap: [ 0 ],
-        idMapCounter: 0
+        idMapCounter: 0,
+
+        // and a counter for the generated sections (including asides); see the demo/test which
+        // uses the generated `#fnsection-DDD` identifiers to hack/fix the styling, for example.
+        sectionCounter: 0
       };
     }
 
@@ -720,7 +724,7 @@ export default function footnote_plugin(md, plugin_options) {
     return true;
   }
 
-  function place_footnote_definitions_at(state, token_idx, footnote_id_list, mode) {
+  function place_footnote_definitions_at(state, token_idx, footnote_id_list, category) {
     if (footnote_id_list.length === 0) {
       return; // nothing to inject...
     }
@@ -729,9 +733,10 @@ export default function footnote_plugin(md, plugin_options) {
     const foontnote_spec_list = state.env.footnotes.list;
 
     let token = new state.Token('footnote_block_open', '', 1);
-    token.markup = plugin_options.headerFn(state, mode);
+    token.markup = plugin_options.headerFn(state, category);
     token.meta = {
-      mode
+      sectionId: ++state.env.footnotes.sectionCounter,
+      category
     };
     inject_tokens.push(token);
 
@@ -742,7 +747,7 @@ export default function footnote_plugin(md, plugin_options) {
       token      = new state.Token('footnote_open', '', 1);
       token.meta = {
         id,
-        mode
+        category
       };
       inject_tokens.push(token);
 
@@ -782,7 +787,7 @@ export default function footnote_plugin(md, plugin_options) {
           token.meta = {
             id,
             subId: j,
-            mode
+            category
           };
           inject_tokens.push(token);
         }
@@ -794,7 +799,7 @@ export default function footnote_plugin(md, plugin_options) {
         token = new state.Token('footnote_close', '', -1);
         token.meta = {
           id,
-          mode
+          category
         };
         inject_tokens.push(token);
       }
@@ -802,7 +807,7 @@ export default function footnote_plugin(md, plugin_options) {
 
     token = new state.Token('footnote_block_close', '', -1);
     token.meta = {
-      mode
+      category
     };
     inject_tokens.push(token);
 
@@ -971,7 +976,7 @@ export default function footnote_plugin(md, plugin_options) {
           }
           aside_ids.sort(footnote_print_comparer);
 
-          place_footnote_definitions_at(state, i + 1, aside_ids, tok.type);
+          place_footnote_definitions_at(state, i + 1, aside_ids, 'aside');
           tokens = state.tokens;
         }
         break;
@@ -987,7 +992,7 @@ export default function footnote_plugin(md, plugin_options) {
           }
           section_ids.sort(footnote_print_comparer);
 
-          place_footnote_definitions_at(state, i + 1, section_ids, tok.type);
+          place_footnote_definitions_at(state, i + 1, section_ids, 'section');
           tokens = state.tokens;
 
           // and reset the tracking set:
@@ -1006,7 +1011,7 @@ export default function footnote_plugin(md, plugin_options) {
       }
       end_ids.sort(footnote_print_comparer);
 
-      place_footnote_definitions_at(state, tokens.length, end_ids, /* mode: endNotes */ ':');
+      place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
       //tokens = state.tokens;
     }
 

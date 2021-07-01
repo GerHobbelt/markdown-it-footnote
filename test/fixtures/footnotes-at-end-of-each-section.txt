@@ -1,6 +1,13 @@
 ------
 css: |
     <style>
+    body {
+        margin-left: 20em;
+        max-width: 55em;
+
+        font-family: system-ui, sans-serif;
+    }
+
     /* footnote reference styling in the text */
     sup.footnote-ref > a {
         color: #0066a5;
@@ -64,6 +71,10 @@ css: |
         font-size:  65%;
         vertical-align: bottom;
         padding-left: 0.5em;
+
+        float: right;
+        display: inline-block;
+        background-color: #b3b3b329;
     }
 
     /* rendering sidenotes, section notes' sections and endnote sections: */
@@ -90,6 +101,73 @@ css: |
 
         /* make space for the footnote caption FLOAT: */
         padding-left: 2.2em;
+    }
+
+    aside.footnotes {
+        float: left;
+        /* move into the left edge of BODY: */
+        margin-left: -19.5em;
+        width: 19em;
+
+        /* make sure the sidenote takes the exact width and no surprises when we fiddle with the border styles! */
+        box-sizing: border-box;
+
+        /* move up; rough guestimate to land alongside the footnote reference itself. */
+        margin-top: -3em;
+        /* fix for the margin-top hack:  make sure multiple loating sidenotes don't overlap and have a bit of space between them (0.5em). */
+        margin-bottom: 3.5em;
+        clear: left;
+
+        padding-left: 0.5em;
+        border-right: solid 1em #34af39;
+        padding-top: 0.2em;
+        padding-bottom: 0.2em;
+        border-top: solid 4px #3b8c27;
+        border-bottom: solid 1px #52a563;
+
+        background: #ffffffa6;
+    }
+    aside.footnotes > ul.footnotes-list {
+        margin-top: 0;
+        margin-bottom: -1em;  /* correct for P tag's margin-block-end: 1em */
+
+        /* use gradient to fake a bar that cannot be placed there with border style,
+           because we want the footnote marker to stick out to the other side of this 'border'. */
+        background: linear-gradient(90deg, #f3f3f3 0%, #f3f3f3 1.75em, #3b8c27 1.75em, #3b8c27 2em, rgb(255,255,255) 2em, rgb(255,255,255) 100%);
+
+        /* make space for the footnote caption FLOAT: */
+        padding-left: 2.2em;
+
+        font-size: 85%;
+    }
+    /* force a bit of breathing room in the floating sidenote between the ASIDE border and the P text. */
+    aside.footnotes p {
+        margin-right: 0.3em;
+    }
+    aside.footnotes > h3 {
+        margin: 0;
+        color: #3b8c27;
+
+        font-size: 85%;
+    }
+    section.footnotes > h3 {
+        color: #ff9614;
+    }
+
+    /* ... and then the real horror begins:  correcting floats for NESTED notes:  */
+    section.footnotes aside.footnotes {
+        margin-left: -24em;
+    }
+    section.footnotes li aside.footnotes {
+        margin-left: -26.5em;
+    }
+    /* ... and FLOATING sidenotes inside LISTS */
+    li aside.footnotes {
+        margin-left: -22em;
+    }
+    /* ... and the error cases that are simply too much work otherwise: */
+    #fnsection-15 {
+        margin-left: -24em;
     }
     </style>
 ------
@@ -132,7 +210,10 @@ Some even nicer text
 
 Here is an inline footnote reference^[:the `(B)` way you might imagine, we got fruitcakes all around Santa Monica] for every one of us.
 
-Plus an aside^[>that `(A)` should be plugged in right at the end of this paragraph!] for every one of us.
+Plus an aside^[>that `(A1)` should be plugged in right at the end of this paragraph!] for every one of us.
+
+Plus a 2nd aside^[>that `(A2)` should be plugged in right at the end of this paragraph!] for every one of us.
+Plus a 3rd aside^[>that `(A3)` should be plugged in right at the end of this paragraph!] for every one of us.
 
 Avec du blah blah surplus pour les experiments...
 
