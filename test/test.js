@@ -21,21 +21,21 @@ function generate(fixturePath, md, env) {
   testgen.load(fixturePath, {}, function (data) {
     data.meta = data.meta || {};
 
-    let desc = data.meta.desc || path.relative(fixturePath, data.file);
+    const desc = data.meta.desc || path.relative(fixturePath, data.file);
 
     (data.meta.skip ? describe.skip : describe)(desc, function () {
       data.fixtures.forEach(function (fixture) {
         it(fixture.header + ' [#' + (fixture.first.range[0] - 1) + ']', function () {
-          let test_env = Object.assign({}, env || {});
-          let rv = md.render(fixture.first.text, test_env);
-          let html_rv = `<html>
+          const test_env = Object.assign({}, env || {});
+          const rv = md.render(fixture.first.text, test_env);
+          const html_rv = `<html>
           <head>
           ${ data.meta.css || ''}
           </head>
           <body>
           ${rv}
           `;
-          let diagnostic_filename_base = path.join(__dirname, fixture.header.slice(0, 64).replace(/[^0-9a-z]+/gi, ' ').trim().replace(/ /g, '_'));
+          const diagnostic_filename_base = path.join(__dirname, fixture.header.slice(0, 64).replace(/[^0-9a-z]+/gi, ' ').trim().replace(/ /g, '_'));
           fs.writeFileSync(diagnostic_filename_base + '.html', html_rv, 'utf8');
           delete test_env.state_block.env;
           fs.writeFileSync(diagnostic_filename_base + '.dump.json', JSON.stringify(test_env, null, 2), 'utf8');
@@ -56,27 +56,27 @@ if (0) {
 
 
   describe('footnote.txt', function () {
-    let md = markdown_it({ linkify: true }).use(plugin);
+    const md = markdown_it({ linkify: true }).use(plugin);
 
   // Check that defaults work correctly
     generate(path.join(__dirname, 'fixtures/footnote.txt'), md);
   });
 
   describe('custom docId in env', function () {
-    let md = markdown_it({ linkify: true }).use(plugin);
+    const md = markdown_it({ linkify: true }).use(plugin);
 
   // Now check that using `env.documentId` works to prefix IDs
     generate(path.join(__dirname, 'fixtures/footnote-prefixed.txt'), md, { docId: 'test-doc-id' });
   });
 
   describe('custom footnote ids and labels', function () {
-    let md = markdown_it({
+    const md = markdown_it({
       linkify: true,
       html: true,
       typographer: true
     }).use(plugin, {
       anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
-        let token = tokens[idx];
+        const token = tokens[idx];
         if (token.meta.label) {
           n = '-' + token.meta.label;
         }
@@ -87,7 +87,7 @@ if (0) {
       },
 
       caption: function (n, tokens, idx, options, env, slf) {
-        let token = tokens[idx];
+        const token = tokens[idx];
 
         return '{' + (token.meta.label || n) + '}';
       }
@@ -100,7 +100,7 @@ if (0) {
 
 
 describe('footnotes get parked at the end of the containing section', function () {
-  let md = markdown_it({ linkify: true }).use(plugin, {
+  const md = markdown_it({ linkify: true }).use(plugin, {
     atDocumentEnd: false
   });
 
