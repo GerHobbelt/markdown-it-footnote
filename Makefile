@@ -86,6 +86,7 @@ prep-ci: clean
 	-npm prune
 	-npm audit fix
 	-mocha --version
+	-npm i -D argparse
 
 report-config:
 	-echo "NPM_PACKAGE=${NPM_PACKAGE} NPM_VERSION=${NPM_VERSION} GLOBAL_NAME=${GLOBAL_NAME} BUNDLE_NAME=${BUNDLE_NAME} TMP_PATH=${TMP_PATH} REMOTE_NAME=${REMOTE_NAME} REMOTE_REPO=${REMOTE_REPO} CURR_HEAD=${CURR_HEAD}"
