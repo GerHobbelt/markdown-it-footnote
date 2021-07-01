@@ -83,7 +83,7 @@ const default_plugin_options = {
   // 1: first *reference* in the text
   // 2: *definition* in the text
   // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
-  sortOrder: 2,
+  sortOrder: 3,
 }
 
 export default function footnote_plugin(md, plugin_options) {
@@ -260,15 +260,16 @@ export default function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_close        = render_footnote_close;
   md.renderer.rules.footnote_anchor       = render_footnote_anchor;
 
-  function obtain_footnote_info_slot(env, label?: string) {
+  function obtain_footnote_info_slot(env, label: string|null, at_definition: boolean) {
     if (!env.footnotes) { 
       env.footnotes = { 
         // map label tto ID:
         refs: {},  
         // store footnote info indexed by ID
         list: [], 
-        //TODO: remap ID to re-ordered ID (determines placement order for section notes and endnotes)
-        idMap: [], 
+        // remap ID to re-ordered ID (determines placement order for section notes and endnotes)
+        idMap: [0], 
+        idMapCounter: 0,
       }; 
     }
 
@@ -298,6 +299,43 @@ export default function footnote_plugin(md, plugin_options) {
       infoRec = env.footnotes.list[footnoteId];
       console.assert(!!infoRec, "expects non-NULL footnote info record");
     }
+
+    // now check if the idMap[] has been set up already as well. This depends on
+    // when WE are invoked (`at_definition`) and the configured `options.sortOrder`:
+    switch (plugin_options.sortOrder) {
+    // 0: first *appearance* in the text
+    default:
+    case 0:
+      // basically, this means: order as-is
+      if (!env.footnotes.idMap[footnoteId]) {
+        env.footnotes.idMap[footnoteId] = ++env.footnotes.idMapCounter;
+      }
+      break;
+
+    // 1: first *reference* in the text
+    case 1:
+      if (!at_definition && !env.footnotes.idMap[footnoteId]) {
+        // first reference is now!
+        env.footnotes.idMap[footnoteId] = ++env.footnotes.idMapCounter;
+      }
+      break;
+    
+    // 2: *definition* in the text
+    case 2:
+      if (at_definition && !env.footnotes.idMap[footnoteId]) {
+        // definition is now!
+        env.footnotes.idMap[footnoteId] = ++env.footnotes.idMapCounter;
+      }
+      break;
+    
+    // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
+    case 3:
+      // just note the footnoteId now; this must be re-ordered later when we have collected all footnotes.
+      //
+      // set it up when we get there...
+      break;
+    }
+
     return infoRec;
   }
 
@@ -330,8 +368,9 @@ export default function footnote_plugin(md, plugin_options) {
     let parentIndex = state.env.parentTokenIndex;
     let markerTokenIndex = find_end_of_block_marker(parentState, parentIndex + 1);
     let token = parentState.tokens[markerTokenIndex];
-    if (!token.meta) token.meta = {};
-    if (!token.meta.footnote_list) token.meta.footnote_list = [];
+    if (!token.meta) token.meta = {
+      footnote_list: []
+    };
     token.meta.footnote_list.push(footnoteId);
   }
 
@@ -401,7 +440,7 @@ export default function footnote_plugin(md, plugin_options) {
     // feel the need to place some section note *definitions* ABOVE their first
     // use point.
     //
-    let infoRec = obtain_footnote_info_slot(state.env, label);
+    let infoRec = obtain_footnote_info_slot(state.env, label, true);
 
     infoRec.labelOverride = text;
     infoRec.mode = mode;
@@ -513,7 +552,7 @@ export default function footnote_plugin(md, plugin_options) {
 
       // WARNING: claim our footnote slot for there MAY be nested footnotes
       // discovered in the next inline.parse() call below!
-      let infoRec = obtain_footnote_info_slot(parentEnv, null);
+      let infoRec = obtain_footnote_info_slot(parentEnv, null, true);
       infoRec.mode = mode;
       infoRec.count++;
 
@@ -578,7 +617,7 @@ export default function footnote_plugin(md, plugin_options) {
     label = RegExp.$1;
     let text = RegExp.$2;
 
-    let infoRec = obtain_footnote_info_slot(state.env, label);
+    let infoRec = obtain_footnote_info_slot(state.env, label, false);
 
     if (!silent) {
       footnoteSubId = infoRec.count;
@@ -630,7 +669,7 @@ export default function footnote_plugin(md, plugin_options) {
 
     label = state.src.slice(start + 2, pos - 1);
 
-    let infoRec = obtain_footnote_info_slot(state.env, label);
+    let infoRec = obtain_footnote_info_slot(state.env, label, false);
 
     if (!silent) {
       footnoteSubId = infoRec.count;
@@ -659,7 +698,7 @@ export default function footnote_plugin(md, plugin_options) {
         insideRef = false,
         refTokens = {};
 
-    console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL');
+    console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL', state.env.footnotes);
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
       state.tokens = state.tokens.filter(function (tok, idx) {
@@ -712,6 +751,48 @@ export default function footnote_plugin(md, plugin_options) {
       return !insideRef;
     });
 
+
+    // execute configured sorting/mapping (`idMap`):
+    switch (plugin_options.sortOrder) {
+    // 0: first *appearance* in the text
+    default:
+    case 0:
+    // 1: first *reference* in the text
+    case 1:
+    // 2: *definition* in the text
+    case 2:
+      // order is specified in the `idMap` already. 
+      break;
+    
+    // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
+    case 3:
+      // the `idMap[]` array has not been set up and must be produced 
+      // to turn this into an alphabetically-by-label sort order, where 
+      // a `footnoteId` based index will produce the order of appearance.
+      let idMap = [];
+      for (let i = 0; i < list.length; i++) {
+        idMap[i] = i;
+      }
+      idMap.sort((indexA, indexB) => {
+        let infoA = list[indexA];
+        let infoB = list[indexB];
+
+        if (!infoA) return 1;
+        if (!infoB) return -1;
+        return infoA.label.localeCompare(infoB.label);
+      });
+      console.error("$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$", idMap);
+
+      // Now turn this into a sort order map:
+      let dstMap = state.env.footnotes.idMap;
+      for (let i = 0; i < list.length; i++) {
+        let prio = idMap[i];
+        dstMap[i] = prio;
+      }
+      break;
+    }
+
+
     let inject_tokens = [];
 
     token = new state.Token('footnote_block_open', '', 1);
@@ -720,7 +801,6 @@ export default function footnote_plugin(md, plugin_options) {
 
     // REMEMBER: we're indexing from 1 for footnote IDs instead of from zero(0),
     // so the first slot (`list[0]`) will be NULL:
-    console.error("!!!!!!!!!!!!! list:", list)
     for (i = 1, l = list.length; i < l; i++) {
       let fn = list[i];
       let inject_start_index = inject_tokens.length;
