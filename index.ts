@@ -20,7 +20,17 @@ function captionFnDefault(n, tokens, idx, options, env, slf) {
   return '' + n;
 }
 
-function headerFnDefault(state) {
+function headerFnDefault(state, mode) {
+  switch (mode) {
+  case '>':
+    return 'Side Notes';
+
+  case '=':
+    return 'Section Notes';
+
+  case ':':
+    return 'Endnotes';
+  }
   return '';
 }
 
@@ -205,14 +215,30 @@ export default function footnote_plugin(md, plugin_options) {
 
   function render_footnote_block_open(tokens, idx, options) {
     const header = tokens[idx].markup;
-    return (options.xhtmlOut ? '<hr class="footnotes-sep" />\n' : '<hr class="footnotes-sep">\n') +
-         '<section class="footnotes">\n' +
-           (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
-         '<ul class="footnotes-list">\n';
+    const mode = tokens[idx].meta.mode;
+    switch (mode) {
+    case '>':
+      return '<aside class="footnotes">\n' +
+             (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
+           '<ul class="footnotes-list">\n';
+
+    default:
+      return (options.xhtmlOut ? '<hr class="footnotes-sep" />\n' : '<hr class="footnotes-sep">\n') +
+           '<section class="footnotes">\n' +
+             (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
+           '<ul class="footnotes-list">\n';
+    }
   }
 
-  function render_footnote_block_close() {
-    return '</ul>\n</section>\n';
+  function render_footnote_block_close(tokens, idx, options) {
+    const mode = tokens[idx].meta.mode;
+    switch (mode) {
+    case '>':
+      return '</ul>\n</aside>\n';
+
+    default:
+      return '</ul>\n</section>\n';
+    }
   }
 
   function render_footnote_reference_open(tokens, idx, options) {
@@ -694,9 +720,98 @@ export default function footnote_plugin(md, plugin_options) {
     return true;
   }
 
+  function place_footnote_definitions_at(state, token_idx, footnote_id_list, mode) {
+    if (footnote_id_list.length === 0) {
+      return; // nothing to inject...
+    }
+
+    let inject_tokens = [];
+    const foontnote_spec_list = state.env.footnotes.list;
+
+    let token = new state.Token('footnote_block_open', '', 1);
+    token.markup = plugin_options.headerFn(state, mode);
+    token.meta = {
+      mode
+    };
+    inject_tokens.push(token);
+
+    for (const id of footnote_id_list) {
+      const fn = foontnote_spec_list[id];
+      const inject_start_index = inject_tokens.length;
+
+      token      = new state.Token('footnote_open', '', 1);
+      token.meta = {
+        id,
+        mode
+      };
+      inject_tokens.push(token);
+
+      if (fn.label == null) {
+        // process an inline footnote text:
+        token          = new state.Token('paragraph_open', 'p', 1);
+        token.block    = true;
+        inject_tokens.push(token);
+
+        token          = new state.Token('inline', '', 0);
+        token.children = fn.tokens;
+        token.content  = fn.content;
+        inject_tokens.push(token);
+
+        token          = new state.Token('paragraph_close', 'p', -1);
+        token.block    = true;
+        inject_tokens.push(token);
+      } else {
+        // process a labeled footnote:
+        inject_tokens = inject_tokens.concat(fn.tokens || []);
+      }
+
+      let lastParagraph;
+      if (inject_tokens[inject_tokens.length - 1].type === 'paragraph_close') {
+        lastParagraph = inject_tokens.pop();
+      } else {
+        lastParagraph = null;
+      }
+
+      const cnt = fn.count;
+      if (cnt < 1) {
+        console.error(`footnote ID ${id} is defined but never used. Footnote will be removed from the output!`, fn);
+        inject_tokens = inject_tokens.slice(0, inject_start_index);
+      } else {
+        for (let j = 0; j < cnt; j++) {
+          token = new state.Token('footnote_anchor', '', 0);
+          token.meta = {
+            id,
+            subId: j,
+            mode
+          };
+          inject_tokens.push(token);
+        }
+
+        if (lastParagraph) {
+          inject_tokens.push(lastParagraph);
+        }
+
+        token = new state.Token('footnote_close', '', -1);
+        token.meta = {
+          id,
+          mode
+        };
+        inject_tokens.push(token);
+      }
+    }
+
+    token = new state.Token('footnote_block_close', '', -1);
+    token.meta = {
+      mode
+    };
+    inject_tokens.push(token);
+
+    state.tokens.splice(token_idx, 0, ...inject_tokens);
+  }
+
   // Glue footnote tokens into appropriate slots of token stream.
   function footnote_tail(state, startLine, endLine, silent) {
-    let i, l, j, t, lastParagraph, token, tokens, current, currentRefToken,
+    let i, l, j, t, lastParagraph, token, current, currentRefToken,
         insideRef = false,
         refTokens = {};
 
@@ -709,11 +824,14 @@ export default function footnote_plugin(md, plugin_options) {
       return;
     }
 
-    // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
-    const aside_list = [];
-    const section_list = [];
-    const end_list = [];
+    const idMap = state.env.footnotes.idMap;
 
+    function footnote_print_comparer(idA, idB) {
+      return idMap[idA] - idMap[idB];
+    }
+
+
+    // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
     const list = state.env.footnotes.list;
 
     // extract the tokens constituting the footnote/sidenote *content* and
@@ -771,11 +889,11 @@ export default function footnote_plugin(md, plugin_options) {
       // the `idMap[]` array has not been set up and must be produced
       // to turn this into an alphabetically-by-label sort order, where
       // a `footnoteId` based index will produce the order of appearance.
-      const idMap = [];
+      const reIdMap = [];
       for (let i = 0; i < list.length; i++) {
-        idMap[i] = i;
+        reIdMap[i] = i;
       }
-      idMap.sort((indexA, indexB) => {
+      reIdMap.sort((indexA, indexB) => {
         const infoA = list[indexA];
         const infoB = list[indexB];
 
@@ -788,90 +906,109 @@ export default function footnote_plugin(md, plugin_options) {
         const labelB = infoB.label || `\x01${ infoB.id }`;
         return labelA.localeCompare(labelB);
       });
-      console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', idMap);
+      console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap);
 
       // Now turn this into a sort order map:
-      const dstMap = state.env.footnotes.idMap;
       for (let i = 0; i < list.length; i++) {
-        const prio = idMap[i];
-        dstMap[i] = prio;
+        const prio = reIdMap[i];
+        idMap[i] = prio;
       }
       break;
     }
 
 
-    let inject_tokens = [];
+    const inject_tokens = [];
 
-    token = new state.Token('footnote_block_open', '', 1);
-    token.markup = plugin_options.headerFn(state);
-    inject_tokens.push(token);
+    // Now go through the token stream and place the sidenotes, section_notes and endnotes where they belong:
+    let aside_list;
+    let section_list = new Set();
+    const section_done_list = new Set();  // once a section_note has been printed, it should never appear again!
+    const end_list = new Set();
 
-    // REMEMBER: we're indexing from 1 for footnote IDs instead of from zero(0),
-    // so the first slot (`list[0]`) will be NULL:
-    for (i = 1, l = list.length; i < l; i++) {
-      const fn = list[i];
-      const inject_start_index = inject_tokens.length;
+    let tokens = state.tokens;
+    const foontnote_spec_list = state.env.footnotes.list;
 
-      token      = new state.Token('footnote_open', '', 1);
-      token.meta = {
-        id: i
-      };
-      inject_tokens.push(token);
+    for (i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      switch (tok.type) {
+      case 'footnote_mark_end_of_block':
+        // check the gathered list of footnotes referenced in this block:
+        // - dump the ones which are sidenotes
+        // - mark the ones which are section- or end-notes.
+        //
+        // Note: make sure we don't produce duplicates in the collect sets.
+        {
+          aside_list = new Set();
 
-      if (fn.label == null) {
-        // process an inline footnote text:
-        token          = new state.Token('paragraph_open', 'p', 1);
-        token.block    = true;
-        inject_tokens.push(token);
+          const refd_notes_list = (tok.meta?.footnote_list || []);
+          console.error({ refd_notes_list });
+          for (const id of refd_notes_list) {
+            const footnote = foontnote_spec_list[id];
+            console.error({ id, footnote, foontnote_spec_list });
 
-        token          = new state.Token('inline', '', 0);
-        token.children = fn.tokens;
-        token.content  = fn.content;
-        inject_tokens.push(token);
+            switch (footnote.mode) {
+            case '>':
+              aside_list.add(id);
+              break;
 
-        token          = new state.Token('paragraph_close', 'p', -1);
-        token.block    = true;
-        inject_tokens.push(token);
-      } else {
-        // process a labeled footnote:
-        inject_tokens = inject_tokens.concat(fn.tokens || []);
-      }
+            case '=':
+              if (!section_done_list.has(id)) {
+                section_list.add(id);
+                section_done_list.add(id);
+              }
+              break;
 
-      if (inject_tokens[inject_tokens.length - 1].type === 'paragraph_close') {
-        lastParagraph = inject_tokens.pop();
-      } else {
-        lastParagraph = null;
-      }
+            default:
+            case ':':
+              end_list.add(id);
+              break;
+            }
+          }
 
-      t = fn.count;
-      if (t < 1) {
-        console.error(`footnote ID ${i} is defined but never used. Footnote will be removed from the output!`, fn);
-        inject_tokens = inject_tokens.slice(0, inject_start_index);
-      } else {
-        for (j = 0; j < t; j++) {
-          token = new state.Token('footnote_anchor', '', 0);
-          token.meta = {
-            id: i,
-            subId: j
-          };
-          inject_tokens.push(token);
+          const aside_ids = [];
+          for (const id of aside_list.values()) {
+            aside_ids.push(id);
+          }
+          aside_ids.sort(footnote_print_comparer);
+
+          place_footnote_definitions_at(state, i + 1, aside_ids, tok.type);
+          tokens = state.tokens;
         }
+        break;
 
-        if (lastParagraph) {
-          inject_tokens.push(lastParagraph);
+      case 'footnote_reference_close':
+        // anywhere a footnote *definition* appeared in the original text is
+        // also a place to dump the section_notes gathered to date, so to speak:
+        {
+          const idMap = state.env.footnotes.idMap;
+          const section_ids = [];
+          for (const id of section_list.values()) {
+            section_ids.push(id);
+          }
+          section_ids.sort(footnote_print_comparer);
+
+          place_footnote_definitions_at(state, i + 1, section_ids, tok.type);
+          tokens = state.tokens;
+
+          // and reset the tracking set:
+          section_list = new Set();
         }
-
-        token = new state.Token('footnote_close', '', -1);
-        token.meta = {
-          id: i
-        };
-        inject_tokens.push(token);
+        break;
       }
     }
 
-    token = new state.Token('footnote_block_close', '', -1);
-    inject_tokens.push(token);
-    state.tokens.splice(state.tokens.length, 0, ...inject_tokens);
+    // Now process the endnotes:
+    {
+      const idMap = state.env.footnotes.idMap;
+      const end_ids = [];
+      for (const id of end_list.values()) {
+        end_ids.push(id);
+      }
+      end_ids.sort(footnote_print_comparer);
+
+      place_footnote_definitions_at(state, tokens.length, end_ids, /* mode: endNotes */ ':');
+      //tokens = state.tokens;
+    }
 
     // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
