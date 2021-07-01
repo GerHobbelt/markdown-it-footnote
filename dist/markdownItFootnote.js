@@ -897,7 +897,7 @@ function footnote_plugin(md, plugin_options) {
       };
       inject_tokens.push(token);
 
-      if (fn.tokens) {
+      if (fn.label == null) {
         // process an inline footnote text:
         token = new state.Token('paragraph_open', 'p', 1);
         token.block = true;
@@ -909,12 +909,9 @@ function footnote_plugin(md, plugin_options) {
         token = new state.Token('paragraph_close', 'p', -1);
         token.block = true;
         inject_tokens.push(token);
-      } else if (fn.label) {
+      } else {
         // process a labeled footnote:
         inject_tokens = inject_tokens.concat(fn.tokens || []);
-      } else {
-        // nothing to inject
-        throw Error('unexpected: should never get here!');
       }
 
       if (inject_tokens[inject_tokens.length - 1].type === 'paragraph_close') {
