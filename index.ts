@@ -250,6 +250,9 @@ const default_plugin_options: FootnotePluginOptions = {
   refCombiner: ','
 };
 
+
+
+
 export default function footnote_plugin(md, plugin_options) {
   const parseLinkLabel = md.helpers.parseLinkLabel,
         isSpace = md.utils.isSpace;
@@ -487,7 +490,7 @@ export default function footnote_plugin(md, plugin_options) {
     } else {
       footnoteId = env.footnotes.refs[':' + label];
       infoRec = env.footnotes.list[footnoteId];
-      console.assert(!!infoRec, 'expects non-NULL footnote info record');
+      assert.ok(!!infoRec, 'expects non-NULL footnote info record');
     }
 
     const idMap = env.footnotes.idMap;
@@ -538,17 +541,11 @@ export default function footnote_plugin(md, plugin_options) {
     for (idx = startIndex, len = tokens.length; idx < len; idx++) {
       if (tokens[idx].type === 'footnote_mark_end_of_block') { return idx; }
     }
-    //console.error({ tok: tokens.slice(startIndex), startIndex, idx, len });
-    //throw Error('Should never get here!');
 
     // Punch a slot into the token stream (at the very end)
     // for consistency with footnote_mark_end_of_block():
-    //footnote_mark_end_of_block(state, startLine, endLine, silent);
     const token = new state.Token('footnote_mark_end_of_block', '', 0);
     token.hidden = true;
-    //token.meta = {
-    //  EndOfFile: true
-    //};
     tokens.push(token);
     return tokens.length - 1;
   }
@@ -615,8 +612,6 @@ export default function footnote_plugin(md, plugin_options) {
     const labelInfo = decode_label(state.src.slice(start + 2, labelEnd), true);
     if (!labelInfo) { return false; }
     assert.ok(!labelInfo.extraText);
-
-    //console.error('extracted label = ', { label, labelOverride, labelEnd, pos, start });
 
     // Now see if we already have a footnote ID for this footnote label:
     // fetch it if we have one and otherwise produce a new one so everyone
@@ -755,7 +750,6 @@ export default function footnote_plugin(md, plugin_options) {
       infoRec.count++;
 
       token = state.push('footnote_ref', '', 0);
-      //token.meta = { id: footnoteId, subId: 0, label: null };
       token.meta = {
         id: infoRec.id
       };
@@ -1038,7 +1032,6 @@ export default function footnote_plugin(md, plugin_options) {
         insideRef = false,
         refTokens = {};
 
-    //console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL', state.env.footnotes);
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
       state.tokens = state.tokens.filter(function (tok, idx) {
@@ -1170,25 +1163,12 @@ export default function footnote_plugin(md, plugin_options) {
         //
         // if (isNaN(diff) || diff === 0) then stringcompare else numeric-difference
       });
-      /*
-      console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map((idx) => {
-        const info = footnote_spec_list[idx];
-        if (!info) return '---';
-        assert.ok(info.id === idx);
-        return {
-          idx,
-          compareLabel: info.labelOverride /* || info.label *)/ || ('' + info.id),
-          info
-        };
-      }), reIdMap);
-      */
 
       // Now turn this into a sort order map:
       for (let prio = 0; prio < reIdMap.length; prio++) {
         const id = reIdMap[prio];
         idMap[id] = prio;
       }
-      //console.error('@@@@@@@@@@@@@@@@@', idMap);
       break;
     }
 
@@ -1217,10 +1197,8 @@ export default function footnote_plugin(md, plugin_options) {
           aside_list = new Set();
 
           const refd_notes_list = (tok.meta?.footnote_list || []);
-          //console.error({ refd_notes_list });
           for (const id of refd_notes_list) {
             const footnote = footnote_spec_list[id];
-            //console.error({ id, footnote, footnote_spec_list });
 
             switch (footnote.mode) {
             case '>':
@@ -1286,9 +1264,7 @@ export default function footnote_plugin(md, plugin_options) {
       for (const id of end_list.values()) {
         end_ids.push(id);
       }
-      //console.error('@@@@@@@@@@@@@@ ', { end_ids });
       end_ids.sort(footnote_print_comparer);
-      //console.error('@@@@@@@@@@@@@@ after sort', { end_ids });
 
       place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
       tokens = state.tokens;
@@ -1306,9 +1282,7 @@ export default function footnote_plugin(md, plugin_options) {
           unused_ids.push(id);
         }
       }
-      //console.error('@@@@@@@@@@@@@@ ', { unused_ids });
       unused_ids.sort(footnote_print_comparer);
-      //console.error('@@@@@@@@@@@@@@ after sort', { unused_ids });
 
       place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused');
       //tokens = state.tokens;

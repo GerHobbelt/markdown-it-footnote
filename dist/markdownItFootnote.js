@@ -100,7 +100,7 @@ function generateFootnoteSectionStartHtml(renderInfo) {
   strict(tok.meta != null);
   const header = tok.markup ? `<h3 class="footnotes-header">${tok.markup}</h3>` : '';
   let category = tok.meta.category;
-  strict.ok(category.length > 0); // `category` can contain CSS class illegal characvters, e.g. when category = 'Error::Unused':
+  strict.ok(category.length > 0); // `category` can contain CSS class illegal characters, e.g. when category = 'Error::Unused':
 
   category = category.replace(/[^a-zA-Z0-9_-]+/g, '_');
   return `<hr class="footnotes-sep footnotes-category-${category}" id="fnsection-hr-${tok.meta.sectionId}"${renderInfo.options.xhtmlOut ? ' /' : ''}><aside class="footnotes footnotes-category-${category}" id="fnsection-${tok.meta.sectionId}">${header}<ul class="footnotes-list">\n`;
@@ -394,7 +394,7 @@ function footnote_plugin(md, plugin_options) {
     } else {
       footnoteId = env.footnotes.refs[':' + label];
       infoRec = env.footnotes.list[footnoteId];
-      console.assert(!!infoRec, 'expects non-NULL footnote info record');
+      strict.ok(!!infoRec, 'expects non-NULL footnote info record');
     }
 
     const idMap = env.footnotes.idMap; // now check if the idMap[] has been set up already as well. This depends on
@@ -449,18 +449,12 @@ function footnote_plugin(md, plugin_options) {
       if (tokens[idx].type === 'footnote_mark_end_of_block') {
         return idx;
       }
-    } //console.error({ tok: tokens.slice(startIndex), startIndex, idx, len });
-    //throw Error('Should never get here!');
-    // Punch a slot into the token stream (at the very end)
+    } // Punch a slot into the token stream (at the very end)
     // for consistency with footnote_mark_end_of_block():
-    //footnote_mark_end_of_block(state, startLine, endLine, silent);
 
 
     const token = new state.Token('footnote_mark_end_of_block', '', 0);
-    token.hidden = true; //token.meta = {
-    //  EndOfFile: true
-    //};
-
+    token.hidden = true;
     tokens.push(token);
     return tokens.length - 1;
   }
@@ -576,8 +570,7 @@ function footnote_plugin(md, plugin_options) {
       return false;
     }
 
-    strict.ok(!labelInfo.extraText); //console.error('extracted label = ', { label, labelOverride, labelEnd, pos, start });
-    // Now see if we already have a footnote ID for this footnote label:
+    strict.ok(!labelInfo.extraText); // Now see if we already have a footnote ID for this footnote label:
     // fetch it if we have one and otherwise produce a new one so everyone
     // can use this from now on.
     //
@@ -718,8 +711,7 @@ function footnote_plugin(md, plugin_options) {
       const infoRec = obtain_footnote_info_slot(parentEnv, null, true);
       infoRec.mode = mode;
       infoRec.count++;
-      token = state.push('footnote_ref', '', 0); //token.meta = { id: footnoteId, subId: 0, label: null };
-
+      token = state.push('footnote_ref', '', 0);
       token.meta = {
         id: infoRec.id
       };
@@ -1027,7 +1019,6 @@ function footnote_plugin(md, plugin_options) {
     let i,
         current,
         insideRef = false;
- //console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL', state.env.footnotes);
 
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
@@ -1147,26 +1138,12 @@ function footnote_plugin(md, plugin_options) {
           return diff || atomA.label.localeCompare(atomB.label); // ^^^^^^^ shorthand for:
           //
           // if (isNaN(diff) || diff === 0) then stringcompare else numeric-difference
-        });
-        /*
-        console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map((idx) => {
-          const info = footnote_spec_list[idx];
-          if (!info) return '---';
-          assert.ok(info.id === idx);
-          return {
-            idx,
-            compareLabel: info.labelOverride /* || info.label *)/ || ('' + info.id),
-            info
-          };
-        }), reIdMap);
-        */
-        // Now turn this into a sort order map:
+        }); // Now turn this into a sort order map:
 
         for (let prio = 0; prio < reIdMap.length; prio++) {
           const id = reIdMap[prio];
           idMap[id] = prio;
-        } //console.error('@@@@@@@@@@@@@@@@@', idMap);
-
+        }
 
         break;
     }
@@ -1193,10 +1170,10 @@ function footnote_plugin(md, plugin_options) {
             var _tok$meta;
 
             aside_list = new Set();
-            const refd_notes_list = ((_tok$meta = tok.meta) == null ? void 0 : _tok$meta.footnote_list) || []; //console.error({ refd_notes_list });
+            const refd_notes_list = ((_tok$meta = tok.meta) == null ? void 0 : _tok$meta.footnote_list) || [];
 
             for (const id of refd_notes_list) {
-              const footnote = footnote_spec_list[id]; //console.error({ id, footnote, footnote_spec_list });
+              const footnote = footnote_spec_list[id];
 
               switch (footnote.mode) {
                 case '>':
@@ -1265,11 +1242,9 @@ function footnote_plugin(md, plugin_options) {
 
       for (const id of end_list.values()) {
         end_ids.push(id);
-      } //console.error('@@@@@@@@@@@@@@ ', { end_ids });
+      }
 
-
-      end_ids.sort(footnote_print_comparer); //console.error('@@@@@@@@@@@@@@ after sort', { end_ids });
-
+      end_ids.sort(footnote_print_comparer);
       place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
       tokens = state.tokens;
     } // Now process the unused footnotes and dump them for diagnostic purposes:
@@ -1287,11 +1262,9 @@ function footnote_plugin(md, plugin_options) {
           }));
           unused_ids.push(id);
         }
-      } //console.error('@@@@@@@@@@@@@@ ', { unused_ids });
+      }
 
-
-      unused_ids.sort(footnote_print_comparer); //console.error('@@@@@@@@@@@@@@ after sort', { unused_ids });
-
+      unused_ids.sort(footnote_print_comparer);
       place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused'); //tokens = state.tokens;
     } // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
