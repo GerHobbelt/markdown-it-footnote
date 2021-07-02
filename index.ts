@@ -224,6 +224,8 @@ const default_plugin_options: FootnotePluginOptions = {
   // ':': end node
   // '=': section note (default for regular referenced notes)
   //
+  // Also accepts these keywords: 'aside', 'section', 'end'
+  //
   modeOverride: null,
 
   // list section notes and endnotes in order of:
@@ -261,10 +263,19 @@ export default function footnote_plugin(md, plugin_options) {
 
 
 
+  const modeOverrideMap = {
+    aside: '>',
+    section: '=',
+    end: ':'
+  };
+
   function determine_mode(mode: string, default_mode: string) {
     let override = null;
-    if (plugin_options.modeOverride && '>:='.includes(plugin_options.modeOverride)) {
-      override = plugin_options.modeOverride;
+    if (plugin_options.modeOverride) {
+      const mode = modeOverrideMap[plugin_options.modeOverride] || plugin_options.modeOverride;
+      if ('>:='.includes(plugin_options.modeOverride)) {
+        override = plugin_options.modeOverride;
+      }
     }
     if ('>:='.includes(mode)) {
       return {
@@ -374,15 +385,15 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_reference_open(tokens, idx, options, env, self) {
-    return '<!-- footnote reference start -->\n';
+    return '';
   }
 
   function render_footnote_reference_close() {
-    return '<!-- footnote reference end -->\n';
+    return '';
   }
 
   function render_footnote_mark_end_of_block() {
-    return '<!-- footnote dump marker -->\n';
+    return '';
   }
 
   function render_footnote_open(tokens, idx, options, env, self) {
