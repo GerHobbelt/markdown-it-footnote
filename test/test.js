@@ -17,7 +17,7 @@ import plugin from '../dist/markdownitFootnote.js';
 
 // Most of the rest of this is inlined from generate(), but modified
 // so we can pass in an `env` object
-function generate(fixturePath, md, env) {
+function generate(fixturePath, md, env, use_diag_files) {
   testgen.load(fixturePath, {}, function (data) {
     data.meta = data.meta || {};
 
@@ -27,23 +27,37 @@ function generate(fixturePath, md, env) {
       data.fixtures.forEach(function (fixture) {
         it(fixture.header + ' [#' + (fixture.first.range[0] - 1) + ']', function () {
           const test_env = Object.assign({}, env || {});
-          const rv = md.render(fixture.first.text, test_env);
-          const html_rv = `<html>
-          <head>
-          ${ data.meta.css || ''}
-          </head>
-          <body>
-          ${rv}
-          `;
-          const diagnostic_filename_base = path.join(__dirname, fixture.header.slice(0, 64).replace(/[^0-9a-z]+/gi, ' ').trim().replace(/ /g, '_'));
-          fs.writeFileSync(diagnostic_filename_base + '.html', html_rv, 'utf8');
-          delete test_env.state_block.env;
-          fs.writeFileSync(diagnostic_filename_base + '.dump.json', JSON.stringify(test_env, null, 2), 'utf8');
-          // add variant character after "↩", so we don't have to worry about
-          // invisible characters in tests
+          let rv = md.render(fixture.first.text, test_env);
+          let html_rv = rv;
+          if (data.meta.css) {
+            html_rv = `<html>
+            <head>
+            ${ data.meta.css }
+            </head>
+            <body>
+            ${rv}
+            `;
+          }
+          let sollwert;
+          if (use_diag_files) {
+            const diagnostic_filename_base = fixturePath.replace('.txt', '-diag');
+            fs.writeFileSync(diagnostic_filename_base + '.istwert.html', html_rv, 'utf8');
+            delete test_env.state_block.env;
+            fs.writeFileSync(diagnostic_filename_base + '.dump.json', JSON.stringify(test_env, null, 2), 'utf8');
+            const sollwert_filepath = diagnostic_filename_base + '.sollwert.html';
+            if (!fs.existsSync(sollwert_filepath)) {
+              fs.writeFileSync(sollwert_filepath, html_rv, 'utf8');
+            }
+            rv = html_rv.trim();
+            sollwert = fs.readFileSync(sollwert_filepath, 'utf8').trim();
+          } else {
+            // add variant character after "↩", so we don't have to worry about
+            // invisible characters in tests
+            sollwert = fixture.second.text.replace(/\u21a9(?!\ufe0e)?/g, '\u21a9\ufe0e');
+          }
           assert.strictEqual(
             rv,
-            fixture.second.text.replace(/\u21a9(?!\ufe0e)/g, '\u21a9\ufe0e')
+            sollwert
           );
         });
       });
@@ -96,14 +110,24 @@ if (0) {
     generate(path.join(__dirname, 'fixtures/custom-footnotes.txt'), md);
   });
 
+
+  describe('footnotes get parked at the end of the containing section', function () {
+    const md = markdown_it({ linkify: true }).use(plugin, {
+      atDocumentEnd: false
+    });
+
+    // Check that defaults work correctly
+    generate(path.join(__dirname, 'fixtures/footnotes-at-end-of-each-section.txt'), md, null, true);
+  });
 }
 
 
-describe('footnotes get parked at the end of the containing section', function () {
+
+describe('produce a complex test/demo file with many features combined', function () {
   const md = markdown_it({ linkify: true }).use(plugin, {
     atDocumentEnd: false
   });
 
   // Check that defaults work correctly
-  generate(path.join(__dirname, 'fixtures/footnotes-at-end-of-each-section.txt'), md);
+  generate(path.join(__dirname, 'fixtures/footnotes-at-end-of-each-section.txt'), md, null, true);
 });
