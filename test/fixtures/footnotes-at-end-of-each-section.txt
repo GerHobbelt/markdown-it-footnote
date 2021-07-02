@@ -232,6 +232,19 @@ css: |
         text-decoration: none;
     }
 
+    aside.footnotes-category-Error_Unused span.footnote-caption {
+        margin-left: -7.2em;
+        width:  7.2em;
+        padding-right:  0.5em;
+        background: none;
+    }
+    aside.footnotes-category-Error_Unused sup.footnote-caption {
+        background-color: #f3f3f35c;
+    }
+    aside.footnotes-category-Error_Unused ul.footnotes-list {
+        padding-left: 7.2em;
+        background: linear-gradient(90deg, #ffdede 0%, #f3f3f3 6.75em, red 6.75em, red 7em, rgb(255,255,255) 7em, rgb(255,255,255) 100%);
+    }
 
     /* and move the ASIDE sidenotes IN-LINE when the screen isn't wide enough to easily facilitate them. */
     @media (max-width: 53rem) {
@@ -523,6 +536,24 @@ Moet je d'r natuurlijk geen gewoonte van maken om bij het eerste beste obstakelt
 # Bunch of Citations 
 
 ## Normative References
+
+Here's one[^CSS-SYNTAX-3]. But the others will be listed in the UNUSED section at the end! 
+
+Incidentally, it doesn't matter if you reference it like this: *regular[^CSS-SYNTAX-3]:* 
+
+    [^CSS-SYNTAX-3]
+
+or with "*label override marker `@`*" as in *ref[^@CSS-SYNTAX-3]*: 
+
+    [^@CSS-SYNTAX-3]
+
+as the override flag has already been set below at the footnote *definition*: 
+
+    [^@CSS-SYNTAX-3]:: yada yada...
+
+*One* spot with that override flag suffices!
+
+
 
 [^@CSS-CASCADE-5]:: Elika Etemad; Miriam Suzanne; Tab Atkins Jr.. CSS Cascading and Inheritance Level 5. 8 June 2021. WD. URL: https://www.w3.org/TR/css-cascade-5/
 

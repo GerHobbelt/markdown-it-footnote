@@ -126,8 +126,10 @@ function generateFootnoteSectionStartHtml(renderInfo: RenderInfoParameters) {
   assert(tok != null);
   assert(tok.meta != null);
   const header = (tok.markup ? `<h3 class="footnotes-header">${ tok.markup }</h3>` : '');
-  const category = tok.meta.category;
+  let category = tok.meta.category;
   assert.ok(category.length > 0);
+  // `category` can contain CSS class illegal characters, e.g. when category = 'Error::Unused':
+  category = category.replace(/[^a-zA-Z0-9_-]+/g, '_');
   return `<hr class="footnotes-sep footnotes-category-${ category }" id="fnsection-hr-${ tok.meta.sectionId }"${ renderInfo.options.xhtmlOut ? ' /' : '' }><aside class="footnotes footnotes-category-${ category }" id="fnsection-${ tok.meta.sectionId }">${ header }<ul class="footnotes-list">\n`;
 }
 
@@ -253,6 +255,8 @@ export default function footnote_plugin(md, plugin_options) {
         isSpace = md.utils.isSpace;
 
   plugin_options = Object.assign({}, plugin_options, default_plugin_options);
+
+
 
   function determine_mode(mode: string, default_mode: string) {
     let override = null;
@@ -429,6 +433,7 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
 
+
   md.renderer.rules.footnote_ref          = render_footnote_ref;
   md.renderer.rules.footnote_block_open   = render_footnote_block_open;
   md.renderer.rules.footnote_block_close  = render_footnote_block_close;
@@ -438,6 +443,8 @@ export default function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_open         = render_footnote_open;
   md.renderer.rules.footnote_close        = render_footnote_close;
   md.renderer.rules.footnote_anchor       = render_footnote_anchor_backref;
+
+
 
   function obtain_footnote_info_slot(env, label: string|null, at_definition: boolean) {
     if (!env.footnotes) {
@@ -571,9 +578,11 @@ export default function footnote_plugin(md, plugin_options) {
     return false;
   }
 
+
+
   // Process footnote block definition
   function footnote_def(state, startLine, endLine, silent) {
-    let oldBMark, oldTShift, oldSCount, oldParentType, pos, label, token,
+    let oldBMark, oldTShift, oldSCount, oldParentType, pos, token,
         initial, offset, ch, posAfterColon,
         start = state.bMarks[startLine] + state.tShift[startLine],
         max = state.eMarks[startLine];
@@ -603,12 +612,9 @@ export default function footnote_plugin(md, plugin_options) {
     if (silent) { return true; }
     pos++;
 
-    label = state.src.slice(start + 2, labelEnd);
-    let labelOverride;
-    if (label.match(/^(\S+)\s+(.+)$/)) {
-      label = RegExp.$1;
-      labelOverride = RegExp.$2.trim();
-    }
+    const labelInfo = decode_label(state.src.slice(start + 2, labelEnd), true);
+    if (!labelInfo) { return false; }
+    assert.ok(!labelInfo.extraText);
 
     //console.error('extracted label = ', { label, labelOverride, labelEnd, pos, start });
 
@@ -627,9 +633,10 @@ export default function footnote_plugin(md, plugin_options) {
     // feel the need to place some section note *definitions* ABOVE their first
     // use point.
     //
-    const infoRec = obtain_footnote_info_slot(state.env, label, true);
-
-    infoRec.labelOverride = labelOverride;
+    const infoRec = obtain_footnote_info_slot(state.env, labelInfo.label, true);
+    if (labelInfo.labelOverride) {
+      infoRec.labelOverride = labelInfo.labelOverride;
+    }
     infoRec.mode = mode;
     infoRec.content = state.src.slice(pos, max);
 
@@ -689,6 +696,8 @@ export default function footnote_plugin(md, plugin_options) {
 
     return true;
   }
+
+
 
   // Process inline footnotes (^[...] or ^[>...])
   function footnote_inline(state, silent) {
@@ -775,10 +784,45 @@ export default function footnote_plugin(md, plugin_options) {
     return true;
   }
 
+
+
+  // Check if this is a valid ffootnote reference label.
+  //
+  // Also see if there's a label OVERRIDE text or marker ('@') provided.
+  //
+  // Return the parsed label record.
+  function decode_label(label: string, extra_text_is_labelOverride: boolean) {
+    if (!label) {
+      return null;
+    }
+    const m = label.match(/^(@?)(\S+)(?:\s+(.+))?$/);  // label with OPTIONAL override text...
+    if (!m) {
+      return null;
+    }
+    assert.ok(m[2].length > 0);
+    let extraText = m[3]?.trim();
+    // label [output] override?
+    let override = null;
+    if (m[1]) {
+      override = m[2];
+    }
+    if (extra_text_is_labelOverride && extraText) {
+      override = extraText;
+      extraText = null;
+    }
+
+    return {
+      label: m[2],
+      labelOverride: override,
+      extraText
+    };
+  }
+
+
+
   // Process footnote references with text ([^label ...])
   function footnote_ref_with_text(state, silent) {
-    let label,
-        pos,
+    let pos,
         footnoteSubId,
         token,
         max = state.posMax,
@@ -801,12 +845,14 @@ export default function footnote_plugin(md, plugin_options) {
     if (pos >= max) { return false; }
     pos++;
 
-    label = state.src.slice(start + 2, pos - 1);
-    if (!label || !label.match(/^(\S+)\s+(.+)$/)) { return false; }
-    label = RegExp.$1;
-    const text = RegExp.$2.trim();
+    const labelInfo = decode_label(state.src.slice(start + 2, pos - 1), false);
+    if (!labelInfo || !labelInfo.extraText) { return false; }
+    assert.ok(labelInfo.extraText.length > 0);
 
-    const infoRec = obtain_footnote_info_slot(state.env, label, false);
+    const infoRec = obtain_footnote_info_slot(state.env, labelInfo.label, false);
+    if (labelInfo.labelOverride) {
+      infoRec.labelOverride = labelInfo.labelOverride;
+    }
 
     if (!silent) {
       footnoteSubId = infoRec.count;
@@ -817,7 +863,7 @@ export default function footnote_plugin(md, plugin_options) {
       token.meta = {
         id: infoRec.id,
         subId: footnoteSubId,
-        text
+        text: labelInfo.extraText
       };
 
       update_end_of_block_marker(state, infoRec.id);
@@ -830,10 +876,11 @@ export default function footnote_plugin(md, plugin_options) {
     return true;
   }
 
+
+
   // Process footnote references ([^...])
   function footnote_ref(state, silent) {
-    let label,
-        pos,
+    let pos,
         footnoteSubId,
         token,
         max = state.posMax,
@@ -846,7 +893,7 @@ export default function footnote_plugin(md, plugin_options) {
     if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) { return false; }
 
     for (pos = start + 2; pos < max; pos++) {
-      if (state.src.charCodeAt(pos) === 0x20) { return false; }
+      //if (state.src.charCodeAt(pos) === 0x20) { return false; }
       if (state.src.charCodeAt(pos) === 0x0A) { return false; }
       if (state.src.charCodeAt(pos) === 0x5D /* ] */) {
         break;
@@ -857,9 +904,14 @@ export default function footnote_plugin(md, plugin_options) {
     if (pos >= max) { return false; }
     pos++;
 
-    label = state.src.slice(start + 2, pos - 1);
+    const labelInfo = decode_label(state.src.slice(start + 2, pos - 1), true);
+    if (!labelInfo) { return false; }
+    assert.ok(!labelInfo.extraText);
 
-    const infoRec = obtain_footnote_info_slot(state.env, label, false);
+    const infoRec = obtain_footnote_info_slot(state.env, labelInfo.label, false);
+    if (labelInfo.labelOverride) {
+      infoRec.labelOverride = labelInfo.labelOverride;
+    }
 
     if (!silent) {
       footnoteSubId = infoRec.count;
@@ -881,6 +933,8 @@ export default function footnote_plugin(md, plugin_options) {
     state.posMax = max;
     return true;
   }
+
+
 
   function place_footnote_definitions_at(state, token_idx, footnote_id_list, category) {
     if (footnote_id_list.length === 0) {
@@ -1026,11 +1080,6 @@ export default function footnote_plugin(md, plugin_options) {
         insideRef = true;
         current = [];
         currentRefToken = tok;
-/*
-        if (tok.meta.mode === '>') {
-          aside_list.push(idx);
-        }
-*/
         return true;
 
       case 'footnote_reference_close':
@@ -1269,6 +1318,9 @@ export default function footnote_plugin(md, plugin_options) {
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
     state.env.state_block.tokens = state.tokens;
   }
+
+
+
 
   // attach ourselves to the start of block handling too
   md.block.ruler.before('table', 'footnote_mark_end_of_block', footnote_mark_end_of_block);
