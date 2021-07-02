@@ -166,7 +166,7 @@ css: |
         margin-left: -22em;
     }
     /* ... and the error cases that are simply too much work otherwise: */
-    #fnsection-15 {
+    #fnsection-12 {
         margin-left: -24em;
     }
     </style>
@@ -311,7 +311,7 @@ En heel belangrijk:
 
     - Waar is de *dynamiek*? Ìs er enige *dynamiek* in het verhaal te vinden? En zo ja, hoe komt die over? Helpt die om de tekst te *verteren* of blijft 't steken bij *herkauwen*?
 
-    - En de belangrijkste van het rijtje: voor *wie* is dit verhaal geschreven[^target]? En wat lijkt de doelstelling van de schrijver? Is er, naar de doelgroep -- of doelgroep-**en**! -- toe misschien nog sprake van een *dubbele agenda*, een dubbel doel, een "*undercurrent*^[Engels voor "onderstroom". Wat er "*tussen de regels door gezegd of gedaan wordt." De "*verborgen berichtenstroom*," zeg maar.]? Hoe goed pas ik in die doelgroep[^target]?
+    - En de belangrijkste van het rijtje: voor *wie* is dit verhaal geschreven[^target]? En wat lijkt de doelstelling van de schrijver? Is er, naar de doelgroep -- of doelgroep-**en**! -- toe misschien nog sprake van een *dubbele agenda*, een dubbel doel, een "*undercurrent*^[Engels voor "onderstroom". Wat er "*tussen de regels door gezegd of gedaan wordt.*" De "*verborgen berichtenstroom*," zeg maar.]? Hoe goed pas ik in die doelgroep[^target]?
 
 
 [^target]: 🤯 Wat de doelgroep is, dat weten we wellicht al. 🤨 Toch?

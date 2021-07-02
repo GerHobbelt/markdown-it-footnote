@@ -1,7 +1,7 @@
 // Process footnotes
 //
 
-import * as assert from 'assert';
+import { strict as assert } from 'assert';
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -93,7 +93,10 @@ const default_plugin_options = {
   // 1: first *reference* in the text
   // 2: *definition* in the text
   // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
-  sortOrder: 3
+  sortOrder: 3,
+
+  // what to print between bunched-together footnote references, i.e. the '+' in `blabla¹⁺²`
+  refCombiner: ','
 };
 
 export default function footnote_plugin(md, plugin_options) {
@@ -148,8 +151,11 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_n(tokens, idx, excludeSubId) {
-    const mark = tokens[idx].meta.id + 1;
+    const mark = tokens[idx].meta.id;
+    assert.ok(Number.isFinite(mark));
+    assert.ok(mark > 0);
     let n = '' + mark; // = mark.toString();
+    assert.ok(n.length > 0);
 
     if (!excludeSubId && tokens[idx].meta.subId > 0) {
       n += '-' + tokens[idx].meta.subId;
@@ -160,10 +166,13 @@ export default function footnote_plugin(md, plugin_options) {
 
   function render_footnote_mark(tokens, idx, env) {
     const token = tokens[idx];
+    assert.ok(token != null);
     const info = env.footnotes.list[token.meta.id];
-    const labelOverride = info?.labelOverride;
-    const mark = labelOverride || determine_footnote_symbol(token.meta.id);
+    assert.ok(info != null);
+    const labelOverride = info.labelOverride;
+    const mark = labelOverride || info.label || determine_footnote_symbol(token.meta.id);
     const n = '' + mark; // = mark.toString();
+    assert.ok(n.length > 0);
     return n;
   }
 
@@ -181,6 +190,8 @@ export default function footnote_plugin(md, plugin_options) {
     const n = render_footnote_mark(tokens, idx, env);
     return plugin_options.captionFn(n, tokens, idx, options, env, slf);
   }
+
+  const bunched_mode_classes = [ '', 'footnote-bunched-ref-ref', 'footnote-bunched-ref-text' ];
 
   function render_footnote_ref(tokens, idx, options, env, slf) {
     const id      = render_footnote_anchor_name(tokens, idx, options, env, slf);
@@ -201,44 +212,23 @@ export default function footnote_plugin(md, plugin_options) {
     //
     const next_token = tokens[idx + 1] || {};
     const next_token_meta = next_token.meta || {};
-    const bunched_footnote_refs = next_token.type === 'footnote_ref' && !next_token_meta.text;
+    const bunched_footnote_ref_mode = (next_token.type === 'footnote_ref' ? !next_token_meta.text ? 1 : 2 : 0);
 
-    if (tokens[idx].meta.text) {
-      return '<a href="#fn' + id + '" id="fnref' + refid + '">' +
-            tokens[idx].meta.text +
-            '<sup class="footnote-ref">' + caption + '</sup></a>' +
-            (bunched_footnote_refs ? '<sup class="footnote-ref">,</sup>' : '');
-    }
-
-    return `<sup class="footnote-ref"><a href="#fn${ id }" id="fnref${ refid }">${ caption }</a>${ bunched_footnote_refs ? ',' : '' }</sup>`;
+    return `<a class="footnote-ref ${ bunched_mode_classes[bunched_footnote_ref_mode] }" href="#fn${ id }" id="fnref${ refid }">${ tokens[idx].meta.text || '' }<sup class="footnote-ref">${ caption }</sup></a>` +
+      (bunched_footnote_ref_mode !== 0 ? `<sup class="footnote-ref-combiner ${ bunched_mode_classes[bunched_footnote_ref_mode] }">${ plugin_options.refCombiner }</sup>` : '');
   }
 
   function render_footnote_block_open(tokens, idx, options) {
-    const header = tokens[idx].markup;
-    const category = tokens[idx].meta.category;
-    switch (category) {
-    case 'aside':
-      return `<aside class="footnotes" id="fnsection-${ tokens[idx].meta.sectionId }">\n` +
-             (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
-           '<ul class="footnotes-list">\n';
-
-    default:
-      return (options.xhtmlOut ? `<hr class="footnotes-sep" id="fnsection-hr-${ tokens[idx].meta.sectionId }" />\n` : `<hr class="footnotes-sep" id="fnsection-hr-${ tokens[idx].meta.sectionId }">\n`) +
-           `<section class="footnotes" id="fnsection-${ tokens[idx].meta.sectionId }">\n` +
-             (header ? '<h3 class="footnotes-header">' + header + '</h3>' : '') +
-           '<ul class="footnotes-list">\n';
-    }
+    const tok = tokens[idx];
+    assert(tok != null);
+    assert(tok.meta != null);
+    const header = (tok.markup ? `<h3 class="footnotes-header">${ tok.markup }</h3>` : '');
+    const category = tok.meta.category;
+    return `<hr class="footnotes-sep footnote-category-${ category }" id="fnsection-hr-${ tok.meta.sectionId }"${ options.xhtmlOut ? ' /' : '' }><aside class="footnotes footnote-category-${ category }" id="fnsection-${ tok.meta.sectionId }">${ header }<ul class="footnotes-list">\n`;
   }
 
   function render_footnote_block_close(tokens, idx, options) {
-    const category = tokens[idx].meta.category;
-    switch (category) {
-    case 'aside':
-      return '</ul>\n</aside>\n';
-
-    default:
-      return '</ul>\n</section>\n';
-    }
+    return '</ul>\n</aside>\n';
   }
 
   function render_footnote_reference_open(tokens, idx, options) {
@@ -267,12 +257,12 @@ export default function footnote_plugin(md, plugin_options) {
     return '</span></li>\n';
   }
 
-  function render_footnote_anchor(tokens, idx, options, env, slf) {
+  function render_footnote_anchor_backref(tokens, idx, options, env, slf) {
     let refid = render_footnote_n(tokens, idx, false);
     refid = plugin_options.anchorFn(refid, false, tokens, idx, options, env, slf);
 
     /* ↩ with escape code to prevent display as Apple Emoji on iOS */
-    return ' <a href="#fnref' + refid + '" class="footnote-backref">\u21a9\uFE0E</a>';
+    return ` <a href="#fnref${ refid }" class="footnote-backref">\u21a9\uFE0E</a>`;
   }
 
 
@@ -284,7 +274,7 @@ export default function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_mark_end_of_block = render_footnote_mark_end_of_block;
   md.renderer.rules.footnote_open         = render_footnote_open;
   md.renderer.rules.footnote_close        = render_footnote_close;
-  md.renderer.rules.footnote_anchor       = render_footnote_anchor;
+  md.renderer.rules.footnote_anchor       = render_footnote_anchor_backref;
 
   function obtain_footnote_info_slot(env, label: string|null, at_definition: boolean) {
     if (!env.footnotes) {
@@ -454,7 +444,7 @@ export default function footnote_plugin(md, plugin_options) {
       text = RegExp.$2;
     }
 
-    console.error('extracted label = ', { label, text, labelEnd, pos, start });
+    //console.error('extracted label = ', { label, text, labelEnd, pos, start });
 
     // Now see if we already have a footnote ID for this footnote label:
     // fetch it if we have one and otherwise produce a new one so everyone
@@ -814,13 +804,22 @@ export default function footnote_plugin(md, plugin_options) {
     state.tokens.splice(token_idx, 0, ...inject_tokens);
   }
 
+  function more_footnote_reference_blocks_follow_immediately(tokens, idx) {
+    let tok = tokens[idx];
+    while (tok && (tok.type === 'footnote_mark_end_of_block' || tok.type === 'footnote_reference_close')) {
+      idx++;
+      tok = tokens[idx];
+    }
+    return tok && (tok.type === 'footnote_reference_open');
+  }
+
   // Glue footnote tokens into appropriate slots of token stream.
   function footnote_tail(state, startLine, endLine, silent) {
     let i, l, j, t, lastParagraph, token, current, currentRefToken,
         insideRef = false,
         refTokens = {};
 
-    console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL', state.env.footnotes);
+    //console.error('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ TAIL', state.env.footnotes);
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:
       state.tokens = state.tokens.filter(function (tok, idx) {
@@ -911,7 +910,7 @@ export default function footnote_plugin(md, plugin_options) {
         const labelB = infoB.label || `\x01${ infoB.id }`;
         return labelA.localeCompare(labelB);
       });
-      console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap);
+      //console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap);
 
       // Now turn this into a sort order map:
       for (let i = 0; i < list.length; i++) {
@@ -946,10 +945,10 @@ export default function footnote_plugin(md, plugin_options) {
           aside_list = new Set();
 
           const refd_notes_list = (tok.meta?.footnote_list || []);
-          console.error({ refd_notes_list });
+          //console.error({ refd_notes_list });
           for (const id of refd_notes_list) {
             const footnote = foontnote_spec_list[id];
-            console.error({ id, footnote, foontnote_spec_list });
+            //console.error({ id, footnote, foontnote_spec_list });
 
             switch (footnote.mode) {
             case '>':
@@ -983,8 +982,13 @@ export default function footnote_plugin(md, plugin_options) {
 
       case 'footnote_reference_close':
         // anywhere a footnote *definition* appeared in the original text is
-        // also a place to dump the section_notes gathered to date, so to speak:
-        {
+        // also a place to dump the section_notes gathered to date, so to speak.
+        //
+        // However, DO detect clusters of footnote definitions and MERGE them
+        // together:
+        if (more_footnote_reference_blocks_follow_immediately(tokens, i + 1)) {
+          continue;
+        } else {
           const idMap = state.env.footnotes.idMap;
           const section_ids = [];
           for (const id of section_list.values()) {
