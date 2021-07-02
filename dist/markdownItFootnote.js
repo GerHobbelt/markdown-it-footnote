@@ -96,8 +96,8 @@ function generateFootnoteRefHtml(id, caption, refId, bunched_footnote_ref_mode, 
 
 function generateFootnoteSectionStartHtml(renderInfo) {
   const tok = renderInfo.tokens[renderInfo.idx];
-  strict(tok != null);
-  strict(tok.meta != null);
+  strict.ok(tok != null);
+  strict.ok(tok.meta != null);
   const header = tok.markup ? `<h3 class="footnotes-header">${tok.markup}</h3>` : '';
   let category = tok.meta.category;
   strict.ok(category.length > 0); // `category` can contain CSS class illegal characters, e.g. when category = 'Error::Unused':
@@ -123,8 +123,8 @@ function generateFootnoteEndHtml(renderInfo) {
 
 function generateFootnoteBackRefHtml(id, refId, renderInfo) {
   const tok = renderInfo.tokens[renderInfo.idx];
-  strict(tok != null);
-  strict(tok.meta != null);
+  strict.ok(tok != null);
+  strict.ok(tok.meta != null);
   /* ↩ with escape code to prevent display as Apple Emoji on iOS */
 
   return ` <a href="#fnref${refId}" class="footnote-backref footnote-backref-${tok.meta.subId} footnote-backref-R${tok.meta.backrefCount - tok.meta.subId - 1}">\u21a9\uFE0E</a>`;
@@ -235,7 +235,6 @@ function footnote_plugin(md, plugin_options) {
     const info = renderInfo.env.footnotes.list[token.meta.id];
     strict.ok(info != null);
     const mark = plugin_options.mkLabel(token.meta.id, info, renderInfo);
-    console.error('-->', { id: token.meta.id, mark })
     strict.ok(mark.length > 0);
     return mark;
   }
@@ -344,8 +343,8 @@ function footnote_plugin(md, plugin_options) {
       self
     };
     const tok = tokens[idx];
-    strict(tok != null);
-    strict(tok.meta != null);
+    strict.ok(tok != null);
+    strict.ok(tok.meta != null);
     const id = render_footnote_anchor_name(renderInfo);
     let refId = render_footnote_n(tokens, idx, false);
     refId = plugin_options.anchorFn(refId, false, renderInfo);
@@ -934,18 +933,18 @@ function footnote_plugin(md, plugin_options) {
     return true;
   }
 
-  function place_footnote_definitions_at(state, token_idx, footnote_id_list, category) {
+  function place_footnote_definitions_at(state, token_idx, footnote_id_list, category, baseInfo) {
     if (footnote_id_list.length === 0) {
       return; // nothing to inject...
     }
 
     let inject_tokens = [];
-    strict.ok(state.env.footnotes.list != null);
-    const footnote_spec_list = state.env.footnotes.list;
+    strict.ok(baseInfo.env.footnotes.list != null);
+    const footnote_spec_list = baseInfo.env.footnotes.list;
     let token = new state.Token('footnote_block_open', '', 1);
-    token.markup = plugin_options.headerFn(category, state.env, plugin_options);
+    token.markup = plugin_options.headerFn(category, baseInfo.env, plugin_options);
     token.meta = {
-      sectionId: ++state.env.footnotes.sectionCounter,
+      sectionId: ++baseInfo.env.footnotes.sectionCounter,
       category
     };
     inject_tokens.push(token);
@@ -1217,7 +1216,7 @@ function footnote_plugin(md, plugin_options) {
             }
 
             aside_ids.sort(footnote_print_comparer);
-            place_footnote_definitions_at(state, i + 1, aside_ids, 'aside');
+            place_footnote_definitions_at(state, i + 1, aside_ids, 'aside', baseInfo);
             tokens = state.tokens;
           }
           break;
@@ -1238,7 +1237,7 @@ function footnote_plugin(md, plugin_options) {
             }
 
             section_ids.sort(footnote_print_comparer);
-            place_footnote_definitions_at(state, i + 1, section_ids, 'section');
+            place_footnote_definitions_at(state, i + 1, section_ids, 'section', baseInfo);
             tokens = state.tokens; // and reset the tracking set:
 
             section_list = new Set();
@@ -1257,7 +1256,7 @@ function footnote_plugin(md, plugin_options) {
       }
 
       end_ids.sort(footnote_print_comparer);
-      place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
+      place_footnote_definitions_at(state, tokens.length, end_ids, 'end', baseInfo);
       tokens = state.tokens;
     } // Now process the unused footnotes and dump them for diagnostic purposes:
 
@@ -1277,7 +1276,7 @@ function footnote_plugin(md, plugin_options) {
       }
 
       unused_ids.sort(footnote_print_comparer);
-      place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused'); //tokens = state.tokens;
+      place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused', baseInfo); //tokens = state.tokens;
     } // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
 

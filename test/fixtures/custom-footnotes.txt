@@ -1,16 +1,30 @@
 
-Custom ids/captions example:
+A few
+custom ids/captions examples follow here:
+
 .
-Here is a footnote reference,[^1] and another,[^longnote] and an inline footnote ^[it works!].
+Here is a footnote reference,[^1] and another[^longnote] and an inline footnote ^[it works!].
 
 And then there are duplicate references to those footnotes here[^1][^longnote].
 
 [^1]: Here is the footnote.
 
-[^longnote]: Here's one with multiple blocks.
+[^longnote]: This one will have a regular looking HTML `#ID` for a link, but the footnote itself will be called `longnote` (in superscript).
 
     Subsequent paragraphs are indented to show that they
 belong to the previous footnote.
+.
+xxx
+.
+
+
+With a label override:
+.
+Here is a footnote reference,[^1] and another[^2 longnote text link acting as a footnote reference].
+
+[^1 foo]: Here is the footnote.
+
+[^2 bar]: While named `#fn-bar` in the HTML link, it's HTML `#ID` link will be `2` instead, thanks to the custom anchor and caption render methods.
 .
 xxx
 .

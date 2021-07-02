@@ -29,7 +29,7 @@ function generate(fixturePath, md, env, dump_json) {
 
     (data.meta.skip ? describe.skip : describe)(desc, function () {
       data.fixtures.forEach(function (fixture, idx) {
-        if ((fixture.first.range[0] - 1) !== 3) return;
+        //if ((fixture.first.range[0] - 1) !== 3) return;
 
         it(fixture.header + ' [line #' + (fixture.first.range[0] - 1) + ']', function () {
           const test_env = Object.assign({}, env || {});
@@ -101,21 +101,36 @@ describe('custom footnote ids and labels', function () {
     html: true,
     typographer: true
   }).use(plugin, {
-    anchorFn: function (n, excludeSubId, tokens, idx, options, env, slf) {
-      const token = tokens[idx];
-      if (token.meta.label) {
-        n = '-' + token.meta.label;
+    anchorFn: function (n, excludeSubId, renderInfo) {
+      const token = renderInfo.tokens[renderInfo.idx];
+      assert.ok(token != null);
+      assert.ok(token.meta != null);
+      const id = token.meta.id;
+
+      const tokenInfo = renderInfo.env.footnotes.list[id];
+      assert.ok(tokenInfo != null);
+
+      n = '-ID-' + id;
+      if (tokenInfo.labelOverride) {
+        n = '-' + tokenInfo.labelOverride;
       }
       if (!excludeSubId && token.meta.subId > 0) {
         n += '~' + token.meta.subId;
       }
+      console.error({n, id, token, tokenInfo})
       return n;
     },
 
-    captionFn: function (n, tokens, idx, options, env, slf) {
-      const token = tokens[idx];
+    captionFn: function (n, renderInfo) {
+      const token = renderInfo.tokens[renderInfo.idx];
+      assert.ok(token != null);
+      assert.ok(token.meta != null);
+      const id = token.meta.id;
 
-      return '{' + (token.meta.label || n) + '}';
+      const tokenInfo = renderInfo.env.footnotes.list[id];
+      assert.ok(tokenInfo != null);
+
+      return '{' + (tokenInfo.label || n) + '}';
     }
   });
 
@@ -157,7 +172,6 @@ describe('feature tests with custom captioner: Roman numerals', function () {
   }).use(plugin, {
     numberSequence: null,
     mkLabel: (idx, info, baseInfo) => {
-      console.error('MKLABEL', idx);
       const label = info.labelOverride;
       if (label) {
         return label;

@@ -40,7 +40,7 @@ interface footnoteMetaInfo {
 
 
 
-function anchorFnDefault(n: number, excludeSubId: number, baseInfo: GenericInfoParameters) {
+function anchorFnDefault(n: number, excludeSubId: number, baseInfo: RenderInfoParameters) {
   const env = baseInfo.env;
   assert.ok(env != null);
   let prefix = '';
@@ -50,7 +50,7 @@ function anchorFnDefault(n: number, excludeSubId: number, baseInfo: GenericInfoP
   return prefix + n;
 }
 
-function captionFnDefault(n, baseInfo: GenericInfoParameters) {
+function captionFnDefault(n, baseInfo: RenderInfoParameters) {
   //return '[' + n + ']';
   return '' + n;
 }
@@ -123,8 +123,8 @@ function generateFootnoteRefHtml(id, caption, refId, bunched_footnote_ref_mode, 
 
 function generateFootnoteSectionStartHtml(renderInfo: RenderInfoParameters) {
   const tok = renderInfo.tokens[renderInfo.idx];
-  assert(tok != null);
-  assert(tok.meta != null);
+  assert.ok(tok != null);
+  assert.ok(tok.meta != null);
   const header = (tok.markup ? `<h3 class="footnotes-header">${ tok.markup }</h3>` : '');
   let category = tok.meta.category;
   assert.ok(category.length > 0);
@@ -150,8 +150,8 @@ function generateFootnoteEndHtml(renderInfo: RenderInfoParameters) {
 
 function generateFootnoteBackRefHtml(id, refId, renderInfo: RenderInfoParameters) {
   const tok = renderInfo.tokens[renderInfo.idx];
-  assert(tok != null);
-  assert(tok.meta != null);
+  assert.ok(tok != null);
+  assert.ok(tok.meta != null);
 
   /* ↩ with escape code to prevent display as Apple Emoji on iOS */
   return ` <a href="#fnref${ refId }" class="footnote-backref footnote-backref-${ tok.meta.subId } footnote-backref-R${ tok.meta.backrefCount - tok.meta.subId - 1 }">\u21a9\uFE0E</a>`;
@@ -183,8 +183,8 @@ function render_sidenote_close() {
 
 
 interface FootnotePluginOptions /* extends FootnotePluginOptions */ {                       // eslint-disable-line no-redeclare
-  anchorFn: (n: number, excludeSubId: number, baseInfo: GenericInfoParameters) => string;
-  captionFn: (n: number, baseInfo: GenericInfoParameters) => string;
+  anchorFn: (n: number, excludeSubId: number, baseInfo: RenderInfoParameters) => string;
+  captionFn: (n: number, baseInfo: RenderInfoParameters) => string;
   headerFn: (category: string, baseInfo: GenericInfoParameters) => string;
   mkLabel: (idx: number, info: footnoteMetaInfo, baseInfo: GenericInfoParameters) => string;
 }
@@ -439,8 +439,8 @@ export default function footnote_plugin(md, plugin_options) {
     };
 
     const tok = tokens[idx];
-    assert(tok != null);
-    assert(tok.meta != null);
+    assert.ok(tok != null);
+    assert.ok(tok.meta != null);
     const id = render_footnote_anchor_name(renderInfo);
     let refId = render_footnote_n(tokens, idx, false);
     refId = plugin_options.anchorFn(refId, false, renderInfo);
@@ -945,19 +945,19 @@ export default function footnote_plugin(md, plugin_options) {
 
 
 
-  function place_footnote_definitions_at(state, token_idx, footnote_id_list, category) {
+  function place_footnote_definitions_at(state, token_idx: number, footnote_id_list, category: string, baseInfo: GenericInfoParameters) {
     if (footnote_id_list.length === 0) {
       return; // nothing to inject...
     }
 
     let inject_tokens = [];
-    assert.ok(state.env.footnotes.list != null);
-    const footnote_spec_list = state.env.footnotes.list;
+    assert.ok(baseInfo.env.footnotes.list != null);
+    const footnote_spec_list = baseInfo.env.footnotes.list;
 
     let token = new state.Token('footnote_block_open', '', 1);
-    token.markup = plugin_options.headerFn(category, state.env, plugin_options);
+    token.markup = plugin_options.headerFn(category, baseInfo.env, plugin_options);
     token.meta = {
-      sectionId: ++state.env.footnotes.sectionCounter,
+      sectionId: ++baseInfo.env.footnotes.sectionCounter,
       category
     };
     inject_tokens.push(token);
@@ -1244,7 +1244,7 @@ export default function footnote_plugin(md, plugin_options) {
           }
           aside_ids.sort(footnote_print_comparer);
 
-          place_footnote_definitions_at(state, i + 1, aside_ids, 'aside');
+          place_footnote_definitions_at(state, i + 1, aside_ids, 'aside', baseInfo);
           tokens = state.tokens;
         }
         break;
@@ -1264,7 +1264,7 @@ export default function footnote_plugin(md, plugin_options) {
           }
           section_ids.sort(footnote_print_comparer);
 
-          place_footnote_definitions_at(state, i + 1, section_ids, 'section');
+          place_footnote_definitions_at(state, i + 1, section_ids, 'section', baseInfo);
           tokens = state.tokens;
 
           // and reset the tracking set:
@@ -1282,7 +1282,7 @@ export default function footnote_plugin(md, plugin_options) {
       }
       end_ids.sort(footnote_print_comparer);
 
-      place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
+      place_footnote_definitions_at(state, tokens.length, end_ids, 'end', baseInfo);
       tokens = state.tokens;
     }
 
@@ -1300,7 +1300,7 @@ export default function footnote_plugin(md, plugin_options) {
       }
       unused_ids.sort(footnote_print_comparer);
 
-      place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused');
+      place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused', baseInfo);
       //tokens = state.tokens;
     }
 
