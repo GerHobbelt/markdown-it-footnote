@@ -65,8 +65,10 @@ function headerFnDefault(category, baseInfo: GenericInfoParameters) {
 
   case 'end':
     return 'Endnotes';
+
+  default:                  // used for error category, e.g. 'Error::Unused'
+    return category;
   }
-  return '';
 }
 
 function determine_footnote_symbol(idx: number, info: footnoteMetaInfo, baseInfo: GenericInfoParameters): string {
@@ -121,6 +123,7 @@ function generateFootnoteSectionStartHtml(renderInfo: RenderInfoParameters) {
   assert(tok.meta != null);
   const header = (tok.markup ? `<h3 class="footnotes-header">${ tok.markup }</h3>` : '');
   const category = tok.meta.category;
+  assert.ok(category.length > 0);
   return `<hr class="footnotes-sep footnotes-category-${ category }" id="fnsection-hr-${ tok.meta.sectionId }"${ renderInfo.options.xhtmlOut ? ' /' : '' }><aside class="footnotes footnotes-category-${ category }" id="fnsection-${ tok.meta.sectionId }">${ header }<ul class="footnotes-list">\n`;
 }
 
@@ -624,6 +627,7 @@ export default function footnote_plugin(md, plugin_options) {
 
     infoRec.labelOverride = text;
     infoRec.mode = mode;
+    infoRec.content = state.src.slice(pos, max);
 
     token = state.push('footnote_reference_open', '', 1);
     token.meta = {
@@ -879,7 +883,7 @@ export default function footnote_plugin(md, plugin_options) {
     }
 
     let inject_tokens = [];
-    const foontnote_spec_list = state.env.footnotes.list;
+    const footnote_spec_list = state.env.footnotes.list;
 
     let token = new state.Token('footnote_block_open', '', 1);
     token.markup = plugin_options.headerFn(category, state.env, plugin_options);
@@ -890,7 +894,7 @@ export default function footnote_plugin(md, plugin_options) {
     inject_tokens.push(token);
 
     for (const id of footnote_id_list) {
-      const fn = foontnote_spec_list[id];
+      const fn = footnote_spec_list[id];
       const inject_start_index = inject_tokens.length;
 
       token      = new state.Token('footnote_open', '', 1);
@@ -927,32 +931,28 @@ export default function footnote_plugin(md, plugin_options) {
       //}
 
       const cnt = fn.count;
-      if (cnt < 1) {
-        console.error(`ERROR: footnote ID ${id} is defined but never used. Footnote will be removed from the output!`, fn);
-        inject_tokens = inject_tokens.slice(0, inject_start_index);
-      } else {
-        for (let j = 0; j < cnt; j++) {
-          token = new state.Token('footnote_anchor', '', 0);
-          token.meta = {
-            id,
-            subId: j,
-            backrefCount: cnt,
-            category
-          };
-          inject_tokens.push(token);
-        }
-
-        //if (lastParagraph) {
-        //  inject_tokens.push(lastParagraph);
-        //}
-
-        token = new state.Token('footnote_close', '', -1);
+      assert.ok(cnt >= 0);
+      for (let j = 0; j < cnt; j++) {
+        token = new state.Token('footnote_anchor', '', 0);
         token.meta = {
           id,
+          subId: j,
+          backrefCount: cnt,
           category
         };
         inject_tokens.push(token);
       }
+
+      //if (lastParagraph) {
+      //  inject_tokens.push(lastParagraph);
+      //}
+
+      token = new state.Token('footnote_close', '', -1);
+      token.meta = {
+        id,
+        category
+      };
+      inject_tokens.push(token);
     }
 
     token = new state.Token('footnote_block_close', '', -1);
@@ -1003,7 +1003,7 @@ export default function footnote_plugin(md, plugin_options) {
 
 
     // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
-    const list = state.env.footnotes.list;
+    const footnote_spec_list = state.env.footnotes.list;
 
     // extract the tokens constituting the footnote/sidenote *content* and
     // store that bunch in `refTokens[:<currentLabel>]` instead, to be injected back into
@@ -1031,7 +1031,7 @@ export default function footnote_plugin(md, plugin_options) {
       case 'footnote_reference_close':
         insideRef = false;
 
-        const infoRec = list[tok.meta.id];
+        const infoRec = footnote_spec_list[tok.meta.id];
         infoRec.tokens = current;
 
         return true;
@@ -1062,12 +1062,12 @@ export default function footnote_plugin(md, plugin_options) {
       // to turn this into an alphanumerically-by-label sort order, where
       // a `footnoteId` based index will produce the order of appearance.
       const reIdMap = [];
-      for (let i = 1; i < list.length; i++) {
+      for (let i = 1; i < footnote_spec_list.length; i++) {
         reIdMap[i - 1] = i;
       }
       reIdMap.sort((idA, idB) => {
-        const infoA = list[idA];
-        const infoB = list[idB];
+        const infoA = footnote_spec_list[idA];
+        const infoB = footnote_spec_list[idB];
         assert.ok(infoA);
         assert.ok(infoB);
 
@@ -1118,7 +1118,7 @@ export default function footnote_plugin(md, plugin_options) {
       });
       /*
       console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map((idx) => {
-        const info = list[idx];
+        const info = footnote_spec_list[idx];
         if (!info) return '---';
         assert.ok(info.id === idx);
         return {
@@ -1146,9 +1146,9 @@ export default function footnote_plugin(md, plugin_options) {
     let section_list = new Set();
     const section_done_list = new Set();  // once a section_note has been printed, it should never appear again!
     const end_list = new Set();
+    const used_list = new Set();
 
     let tokens = state.tokens;
-    const foontnote_spec_list = state.env.footnotes.list;
 
     for (i = 0; i < tokens.length; i++) {
       const tok = tokens[i];
@@ -1165,24 +1165,27 @@ export default function footnote_plugin(md, plugin_options) {
           const refd_notes_list = (tok.meta?.footnote_list || []);
           //console.error({ refd_notes_list });
           for (const id of refd_notes_list) {
-            const footnote = foontnote_spec_list[id];
-            //console.error({ id, footnote, foontnote_spec_list });
+            const footnote = footnote_spec_list[id];
+            //console.error({ id, footnote, footnote_spec_list });
 
             switch (footnote.mode) {
             case '>':
               aside_list.add(id);
+              used_list.add(id);
               break;
 
             case '=':
               if (!section_done_list.has(id)) {
                 section_list.add(id);
                 section_done_list.add(id);
+                used_list.add(id);
               }
               break;
 
             default:
             case ':':
               end_list.add(id);
+              used_list.add(id);
               break;
             }
           }
@@ -1234,6 +1237,26 @@ export default function footnote_plugin(md, plugin_options) {
       //console.error('@@@@@@@@@@@@@@ after sort', { end_ids });
 
       place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
+      tokens = state.tokens;
+    }
+
+    // Now process the unused footnotes and dump them for diagnostic purposes:
+    {
+      const unused_ids = [];
+
+      for (let i = 1; i < footnote_spec_list.length; i++) {
+        const fn = footnote_spec_list[i];
+        const id = fn.id;
+        if (!used_list.has(id)) {
+          console.error(`ERROR: footnote ID ${id} is defined but never used. Footnote will be added as an ERRONEOUS ENDNOTE to the output, so the situation is easy to diagnose!`, Object.assign({}, fn, { tokens: '......' }));
+          unused_ids.push(id);
+        }
+      }
+      //console.error('@@@@@@@@@@@@@@ ', { unused_ids });
+      unused_ids.sort(footnote_print_comparer);
+      //console.error('@@@@@@@@@@@@@@ after sort', { unused_ids });
+
+      place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused');
       //tokens = state.tokens;
     }
 

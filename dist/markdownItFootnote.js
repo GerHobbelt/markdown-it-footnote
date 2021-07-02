@@ -31,9 +31,11 @@ function headerFnDefault(category, baseInfo) {
 
     case 'end':
       return 'Endnotes';
-  }
 
-  return '';
+    default:
+      // used for error category, e.g. 'Error::Unused'
+      return category;
+  }
 }
 
 function determine_footnote_symbol(idx, info, baseInfo) {
@@ -92,6 +94,7 @@ function generateFootnoteSectionStartHtml(renderInfo) {
   strict(tok.meta != null);
   const header = tok.markup ? `<h3 class="footnotes-header">${tok.markup}</h3>` : '';
   const category = tok.meta.category;
+  strict.ok(category.length > 0);
   return `<hr class="footnotes-sep footnotes-category-${category}" id="fnsection-hr-${tok.meta.sectionId}"${renderInfo.options.xhtmlOut ? ' /' : ''}><aside class="footnotes footnotes-category-${category}" id="fnsection-${tok.meta.sectionId}">${header}<ul class="footnotes-list">\n`;
 }
 
@@ -587,6 +590,7 @@ function footnote_plugin(md, plugin_options) {
     const infoRec = obtain_footnote_info_slot(state.env, label, true);
     infoRec.labelOverride = text;
     infoRec.mode = mode;
+    infoRec.content = state.src.slice(pos, max);
     token = state.push('footnote_reference_open', '', 1);
     token.meta = {
       id: infoRec.id
@@ -874,7 +878,7 @@ function footnote_plugin(md, plugin_options) {
     }
 
     let inject_tokens = [];
-    const foontnote_spec_list = state.env.footnotes.list;
+    const footnote_spec_list = state.env.footnotes.list;
     let token = new state.Token('footnote_block_open', '', 1);
     token.markup = plugin_options.headerFn(category, state.env, plugin_options);
     token.meta = {
@@ -884,8 +888,7 @@ function footnote_plugin(md, plugin_options) {
     inject_tokens.push(token);
 
     for (const id of footnote_id_list) {
-      const fn = foontnote_spec_list[id];
-      const inject_start_index = inject_tokens.length;
+      const fn = footnote_spec_list[id];
       token = new state.Token('footnote_open', '', 1);
       token.meta = {
         id,
@@ -917,32 +920,28 @@ function footnote_plugin(md, plugin_options) {
 
 
       const cnt = fn.count;
+      strict.ok(cnt >= 0);
 
-      if (cnt < 1) {
-        console.error(`ERROR: footnote ID ${id} is defined but never used. Footnote will be removed from the output!`, fn);
-        inject_tokens = inject_tokens.slice(0, inject_start_index);
-      } else {
-        for (let j = 0; j < cnt; j++) {
-          token = new state.Token('footnote_anchor', '', 0);
-          token.meta = {
-            id,
-            subId: j,
-            backrefCount: cnt,
-            category
-          };
-          inject_tokens.push(token);
-        } //if (lastParagraph) {
-        //  inject_tokens.push(lastParagraph);
-        //}
-
-
-        token = new state.Token('footnote_close', '', -1);
+      for (let j = 0; j < cnt; j++) {
+        token = new state.Token('footnote_anchor', '', 0);
         token.meta = {
           id,
+          subId: j,
+          backrefCount: cnt,
           category
         };
         inject_tokens.push(token);
-      }
+      } //if (lastParagraph) {
+      //  inject_tokens.push(lastParagraph);
+      //}
+
+
+      token = new state.Token('footnote_close', '', -1);
+      token.meta = {
+        id,
+        category
+      };
+      inject_tokens.push(token);
     }
 
     token = new state.Token('footnote_block_close', '', -1);
@@ -992,7 +991,7 @@ function footnote_plugin(md, plugin_options) {
     } // Rewrite the tokenstream to place the aside-footnotes and section footnotes where they need to be:
 
 
-    const list = state.env.footnotes.list; // extract the tokens constituting the footnote/sidenote *content* and
+    const footnote_spec_list = state.env.footnotes.list; // extract the tokens constituting the footnote/sidenote *content* and
     // store that bunch in `refTokens[:<currentLabel>]` instead, to be injected back into
     // the tokenstream at the appropriate spots.
 
@@ -1018,7 +1017,7 @@ function footnote_plugin(md, plugin_options) {
 
         case 'footnote_reference_close':
           insideRef = false;
-          const infoRec = list[tok.meta.id];
+          const infoRec = footnote_spec_list[tok.meta.id];
           infoRec.tokens = current;
           return true;
       }
@@ -1049,13 +1048,13 @@ function footnote_plugin(md, plugin_options) {
         // a `footnoteId` based index will produce the order of appearance.
         const reIdMap = [];
 
-        for (let _i = 1; _i < list.length; _i++) {
+        for (let _i = 1; _i < footnote_spec_list.length; _i++) {
           reIdMap[_i - 1] = _i;
         }
 
         reIdMap.sort((idA, idB) => {
-          const infoA = list[idA];
-          const infoB = list[idB];
+          const infoA = footnote_spec_list[idA];
+          const infoB = footnote_spec_list[idB];
           strict.ok(infoA);
           strict.ok(infoB); // is any of these an inline footnote, i.e. without any label yet? Produce a fake label for sorting then!
           //
@@ -1098,7 +1097,7 @@ function footnote_plugin(md, plugin_options) {
         });
         /*
         console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map((idx) => {
-          const info = list[idx];
+          const info = footnote_spec_list[idx];
           if (!info) return '---';
           assert.ok(info.id === idx);
           return {
@@ -1124,8 +1123,8 @@ function footnote_plugin(md, plugin_options) {
     const section_done_list = new Set(); // once a section_note has been printed, it should never appear again!
 
     const end_list = new Set();
+    const used_list = new Set();
     let tokens = state.tokens;
-    const foontnote_spec_list = state.env.footnotes.list;
 
     for (i = 0; i < tokens.length; i++) {
       const tok = tokens[i];
@@ -1144,17 +1143,19 @@ function footnote_plugin(md, plugin_options) {
             const refd_notes_list = ((_tok$meta = tok.meta) == null ? void 0 : _tok$meta.footnote_list) || []; //console.error({ refd_notes_list });
 
             for (const id of refd_notes_list) {
-              const footnote = foontnote_spec_list[id]; //console.error({ id, footnote, foontnote_spec_list });
+              const footnote = footnote_spec_list[id]; //console.error({ id, footnote, footnote_spec_list });
 
               switch (footnote.mode) {
                 case '>':
                   aside_list.add(id);
+                  used_list.add(id);
                   break;
 
                 case '=':
                   if (!section_done_list.has(id)) {
                     section_list.add(id);
                     section_done_list.add(id);
+                    used_list.add(id);
                   }
 
                   break;
@@ -1162,6 +1163,7 @@ function footnote_plugin(md, plugin_options) {
                 default:
                 case ':':
                   end_list.add(id);
+                  used_list.add(id);
                   break;
               }
             }
@@ -1215,7 +1217,29 @@ function footnote_plugin(md, plugin_options) {
 
       end_ids.sort(footnote_print_comparer); //console.error('@@@@@@@@@@@@@@ after sort', { end_ids });
 
-      place_footnote_definitions_at(state, tokens.length, end_ids, 'end'); //tokens = state.tokens;
+      place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
+      tokens = state.tokens;
+    } // Now process the unused footnotes and dump them for diagnostic purposes:
+
+    {
+      const unused_ids = [];
+
+      for (let _i2 = 1; _i2 < footnote_spec_list.length; _i2++) {
+        const fn = footnote_spec_list[_i2];
+        const id = fn.id;
+
+        if (!used_list.has(id)) {
+          console.error(`ERROR: footnote ID ${id} is defined but never used. Footnote will be added as an ERRONEOUS ENDNOTE to the output, so the situation is easy to diagnose!`, Object.assign({}, fn, {
+            tokens: '......'
+          }));
+          unused_ids.push(id);
+        }
+      } //console.error('@@@@@@@@@@@@@@ ', { unused_ids });
+
+
+      unused_ids.sort(footnote_print_comparer); //console.error('@@@@@@@@@@@@@@ after sort', { unused_ids });
+
+      place_footnote_definitions_at(state, tokens.length, unused_ids, 'Error::Unused'); //tokens = state.tokens;
     } // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
 
