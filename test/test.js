@@ -14,49 +14,62 @@ const __dirname = path.dirname(__filename);
 
 import plugin from '../dist/markdownitFootnote.js';
 
+function N(n) {
+  const rv = '00000' + n;
+  return rv.slice(rv.length - 4);
+}
 
 // Most of the rest of this is inlined from generate(), but modified
 // so we can pass in an `env` object
-function generate(fixturePath, md, env, use_diag_files) {
+function generate(fixturePath, md, env, dump_json) {
   testgen.load(fixturePath, {}, function (data) {
     data.meta = data.meta || {};
 
     const desc = data.meta.desc || path.relative(fixturePath, data.file);
 
     (data.meta.skip ? describe.skip : describe)(desc, function () {
-      data.fixtures.forEach(function (fixture) {
-        it(fixture.header + ' [#' + (fixture.first.range[0] - 1) + ']', function () {
+      data.fixtures.forEach(function (fixture, idx) {
+        //if ((fixture.first.range[0] - 1) !== 186) return;
+        
+        it(fixture.header + ' [line #' + (fixture.first.range[0] - 1) + ']', function () {
           const test_env = Object.assign({}, env || {});
-          let rv = md.render(fixture.first.text, test_env);
-          let html_rv = rv;
-          if (data.meta.css) {
-            html_rv = `<html>
-            <head>
-            ${ data.meta.css }
-            </head>
-            <body>
-            ${rv}
-            `;
+          const rv = md.render(fixture.first.text, test_env);
+
+          // make this a decent html file, if possible.
+          const html_rv = `<html>
+          <head>
+          ${ data.meta.css || '' }
+          </head>
+          <body>
+          ${rv}
+          `;
+
+          const diagnostic_filename_base = fixturePath.replace('fixtures', 'results').replace('.txt', '-LINE' + N(fixture.first.range[0] - 1));
+
+          if (!fs.existsSync(path.dirname(diagnostic_filename_base))) {
+            fs.mkdirSync(path.dirname(diagnostic_filename_base));
           }
-          let sollwert;
-          if (use_diag_files) {
-            const diagnostic_filename_base = fixturePath.replace('.txt', '-diag');
-            fs.writeFileSync(diagnostic_filename_base + '.istwert.html', html_rv, 'utf8');
-            delete test_env.state_block.env;
+
+          fs.writeFileSync(diagnostic_filename_base + '.istwert.html', html_rv, 'utf8');
+          delete test_env.state_block.env;
+          if (dump_json) {
             fs.writeFileSync(diagnostic_filename_base + '.dump.json', JSON.stringify(test_env, null, 2), 'utf8');
-            const sollwert_filepath = diagnostic_filename_base + '.sollwert.html';
-            if (!fs.existsSync(sollwert_filepath)) {
-              fs.writeFileSync(sollwert_filepath, html_rv, 'utf8');
-            }
-            rv = html_rv.trim();
-            sollwert = fs.readFileSync(sollwert_filepath, 'utf8').trim();
-          } else {
-            // add variant character after "↩", so we don't have to worry about
-            // invisible characters in tests
-            sollwert = fixture.second.text.replace(/\u21a9(?!\ufe0e)?/g, '\u21a9\ufe0e');
           }
+          const sollwert_filepath = diagnostic_filename_base + '.sollwert.html';
+          if (!fs.existsSync(sollwert_filepath)) {
+            fs.writeFileSync(sollwert_filepath, html_rv, 'utf8');
+          }
+
+          let istwert = html_rv.trim();
+          let sollwert = fs.readFileSync(sollwert_filepath, 'utf8').trim();
+
+          // add variant character after "↩", so we don't have to worry about
+          // invisible characters in tests
+          sollwert = sollwert.replace(/\u21a9(?!\ufe0e)?/g, '\u21a9\ufe0e');
+          istwert = istwert.replace(/\u21a9(?!\ufe0e)?/g, '\u21a9\ufe0e');
+
           assert.strictEqual(
-            rv,
+            istwert,
             sollwert
           );
         });

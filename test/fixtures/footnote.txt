@@ -22,27 +22,7 @@ isn't indented.
 This paragraph won't be part of the note neither, because it
 isn't indented.
 .
-<p>Here is a footnote reference,<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> and another.<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup></p>
-<p>This paragraph won't be part of the note, because it
-isn't indented.</p>
-<p>This paragraph won't be part of the note neither, because it
-isn't indented.</p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>Here's one with multiple blocks.</p>
-<p>Subsequent paragraphs are indented to show that they
-belong to the previous footnote.</p>
-<pre><code>{ some.code }
-</code></pre>
-<p>The whole paragraph can be indented, or just the first
-line.  In this way, multi-paragraph footnotes work like
-multi-paragraph list items. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -56,18 +36,7 @@ They could terminate each other:
 [^2]: bar
 [^3]: baz
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup><sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup><sup class="footnote-ref"><a href="#fn3" id="fnref3">[3]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>foo <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>bar <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn3" class="footnote-item"><p>baz <a href="#fnref3" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -78,17 +47,7 @@ They could be inside blockquotes, and are lazy:
 > [^foo]: bar
 baz
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<blockquote>
-</blockquote>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>bar
-baz <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -113,16 +72,7 @@ Here is an inline note.^[Inlines notes are easier to write, since
 you don't have to pick an identifier and move down to type the
 note.]
 .
-<p>Here is an inline note.<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>Inlines notes are easier to write, since
-you don't have to pick an identifier and move down to type the
-note. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -131,14 +81,7 @@ They could have arbitrary markup:
 .
 foo^[ *bar* ]
 .
-<p>foo<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p> <em>bar</em>  <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -148,14 +91,7 @@ Duplicate footnotes:
 
 [^xxxxx]: foo
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> <sup class="footnote-ref"><a href="#fn1" id="fnref1:1">[1:1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>foo <a href="#fnref1" class="footnote-backref">↩︎</a> <a href="#fnref1:1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -170,17 +106,7 @@ Indents:
 [^yyyyy]: foo
    ---
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> <sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup></p>
-<hr>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><h2>foo</h2>
- <a href="#fnref1" class="footnote-backref">↩︎</a></li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>foo <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -193,17 +119,7 @@ Indents for the first line:
 
 [^yyyyy]:        foo
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> <sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>foo <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><pre><code>foo
-</code></pre>
- <a href="#fnref2" class="footnote-backref">↩︎</a></li>
-</ol>
-</section>
+xxx
 .
 
 Indents for the first line (tabs):
@@ -212,14 +128,7 @@ Indents for the first line (tabs):
 
 [^xxxxx]:		foo
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>foo <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -229,14 +138,7 @@ Security 1
 
 [^__proto__]: blah
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>blah <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -246,14 +148,7 @@ Security 2
 
 [^hasOwnProperty]: blah
 .
-<p><sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>blah <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -261,14 +156,7 @@ Should allow links in inline footnotes
 .
 Example^[this is another example https://github.com]
 .
-<p>Example<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup></p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>this is another example <a href="https://github.com">https://github.com</a> <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -279,16 +167,7 @@ Here is a footnote[^1] reference with [^2 added text].
 [^1]: Here is a footnote.
 [^2]: Here is another footnote.
 .
-<p>Here is a footnote<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> reference with <a href="#fn2" id="fnref2">added text<sup class="footnote-ref">[2]</sup></a>.</p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is a footnote. <a href="#fnref1" class="footnote-backref">↩</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>Here is another footnote. <a href="#fnref2" class="footnote-backref">↩</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 
@@ -300,18 +179,7 @@ Here[^anote] is a footnote [^Bnote reference] with [^c-note added text].
 [^Bnote]: Here is the second footnote.
 [^c-note]: Here is the third footnote.
 .
-<p>Here<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> is a footnote <a href="#fn2" id="fnref2">reference<sup class="footnote-ref">[2]</sup></a> with <a href="#fn3" id="fnref3">added text<sup class="footnote-ref">[3]</sup></a>.</p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is the first footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>Here is the second footnote. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn3" class="footnote-item"><p>Here is the third footnote. <a href="#fnref3" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 

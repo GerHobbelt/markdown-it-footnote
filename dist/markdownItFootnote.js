@@ -230,6 +230,8 @@ function footnote_plugin(md, plugin_options) {
   function render_footnote_mark(renderInfo) {
     const token = renderInfo.tokens[renderInfo.idx];
     strict.ok(token != null);
+    strict.ok(renderInfo.env.footnotes != null);
+    strict.ok(renderInfo.env.footnotes.list != null);
     const info = renderInfo.env.footnotes.list[token.meta.id];
     strict.ok(info != null);
     const mark = plugin_options.mkLabel(token.meta.id, info, renderInfo);
@@ -360,7 +362,17 @@ function footnote_plugin(md, plugin_options) {
   md.renderer.rules.footnote_anchor = render_footnote_anchor_backref;
 
   function obtain_footnote_info_slot(env, label, at_definition) {
+    // inline blocks have their own *child* environment in markdown-it v10+.
+    // As the footnotes must live beyond the lifetime of the inline block env,
+    // we must patch them into the `parentState.env` for the footnote_tail
+    // handler to be able to access them afterwards!
+    while (env.parentState) {
+      env = env.parentState.env;
+      strict.ok(env != null);
+    }
+
     if (!env.footnotes) {
+      console.error('ADD FOOTNOTES LIST', env);
       env.footnotes = {
         // map label tto ID:
         refs: {},
@@ -557,6 +569,7 @@ function footnote_plugin(md, plugin_options) {
     }
 
     const mode = mode_rec.mode;
+    console.error('@#$%^&* DEF1:', mode);
 
     if (pos + 1 >= max || state.src.charCodeAt(++pos) !== 0x20
     /* space */
@@ -570,6 +583,7 @@ function footnote_plugin(md, plugin_options) {
 
     pos++;
     const labelInfo = decode_label(state.src.slice(start + 2, labelEnd), true);
+    console.error('@#$%^&* DEF2:', labelInfo);
 
     if (!labelInfo) {
       return false;
@@ -695,7 +709,8 @@ function footnote_plugin(md, plugin_options) {
     }
 
     const mode = mode_rec.mode;
-    labelEnd = parseLinkLabel(state, start + 1); // parser failed to find ']', so it's not a valid note
+    labelEnd = parseLinkLabel(state, start + 1);
+    console.error('@#$%^&* INLINE:', labelEnd); // parser failed to find ']', so it's not a valid note
 
     if (labelEnd < 0) {
       return false;
@@ -705,15 +720,9 @@ function footnote_plugin(md, plugin_options) {
 
 
     if (!silent) {
-      // inline blocks have their own *child* environment in markdown-it v10+.
-      // As the footnotes must live beyond the lifetime of the inline block env,
-      // we must patch them into the `parentState.env` for the footnote_tail
-      // handler to be able to access them afterwards!
-      const parentState = state.env.parentState;
-      const parentEnv = parentState.env; // WARNING: claim our footnote slot for there MAY be nested footnotes
+      // WARNING: claim our footnote slot for there MAY be nested footnotes
       // discovered in the next inline.parse() call below!
-
-      const infoRec = obtain_footnote_info_slot(parentEnv, null, true);
+      const infoRec = obtain_footnote_info_slot(state.env, null, true);
       infoRec.mode = mode;
       infoRec.count++;
       token = state.push('footnote_ref', '', 0);
@@ -823,6 +832,7 @@ function footnote_plugin(md, plugin_options) {
 
     pos++;
     const labelInfo = decode_label(state.src.slice(start + 2, pos - 1), false);
+    console.error('@#$%^&* REF+TEXT:', labelInfo);
 
     if (!labelInfo || !labelInfo.extraText) {
       return false;
@@ -900,6 +910,7 @@ function footnote_plugin(md, plugin_options) {
 
     pos++;
     const labelInfo = decode_label(state.src.slice(start + 2, pos - 1), true);
+    console.error('@#$%^&* REF:', labelInfo);
 
     if (!labelInfo) {
       return false;
@@ -911,6 +922,8 @@ function footnote_plugin(md, plugin_options) {
     if (labelInfo.labelOverride) {
       infoRec.labelOverride = labelInfo.labelOverride;
     }
+
+    console.error('@#$%^&* REF-OBTAIN:', infoRec, state.env.footnotes);
 
     if (!silent) {
       footnoteSubId = infoRec.count;
@@ -934,6 +947,7 @@ function footnote_plugin(md, plugin_options) {
     }
 
     let inject_tokens = [];
+    strict.ok(state.env.footnotes.list != null);
     const footnote_spec_list = state.env.footnotes.list;
     let token = new state.Token('footnote_block_open', '', 1);
     token.markup = plugin_options.headerFn(category, state.env, plugin_options);
@@ -1024,6 +1038,7 @@ function footnote_plugin(md, plugin_options) {
     let i,
         current,
         insideRef = false;
+    console.error('@#$%^&* TAIL:', state.env.footnotes, state);
 
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:

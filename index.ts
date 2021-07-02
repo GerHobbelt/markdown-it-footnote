@@ -306,6 +306,8 @@ export default function footnote_plugin(md, plugin_options) {
   function render_footnote_mark(renderInfo: RenderInfoParameters): string {
     const token = renderInfo.tokens[renderInfo.idx];
     assert.ok(token != null);
+    assert.ok(renderInfo.env.footnotes != null);
+    assert.ok(renderInfo.env.footnotes.list != null);
     const info = renderInfo.env.footnotes.list[token.meta.id];
     assert.ok(info != null);
     const mark: string = plugin_options.mkLabel(token.meta.id, info, renderInfo);
@@ -461,6 +463,15 @@ export default function footnote_plugin(md, plugin_options) {
 
 
   function obtain_footnote_info_slot(env, label: string|null, at_definition: boolean) {
+    // inline blocks have their own *child* environment in markdown-it v10+.
+    // As the footnotes must live beyond the lifetime of the inline block env,
+    // we must patch them into the `parentState.env` for the footnote_tail
+    // handler to be able to access them afterwards!
+    while (env.parentState) {
+      env = env.parentState.env;
+      assert.ok(env != null);
+    }
+
     if (!env.footnotes) {
       env.footnotes = {
         // map label tto ID:
@@ -747,16 +758,9 @@ export default function footnote_plugin(md, plugin_options) {
     // so all that's left to do is to call tokenizer.
     //
     if (!silent) {
-      // inline blocks have their own *child* environment in markdown-it v10+.
-      // As the footnotes must live beyond the lifetime of the inline block env,
-      // we must patch them into the `parentState.env` for the footnote_tail
-      // handler to be able to access them afterwards!
-      const parentState = state.env.parentState;
-      const parentEnv = parentState.env;
-
       // WARNING: claim our footnote slot for there MAY be nested footnotes
       // discovered in the next inline.parse() call below!
-      const infoRec = obtain_footnote_info_slot(parentEnv, null, true);
+      const infoRec = obtain_footnote_info_slot(state.env, null, true);
       infoRec.mode = mode;
       infoRec.count++;
 
@@ -947,6 +951,7 @@ export default function footnote_plugin(md, plugin_options) {
     }
 
     let inject_tokens = [];
+    assert.ok(state.env.footnotes.list != null);
     const footnote_spec_list = state.env.footnotes.list;
 
     let token = new state.Token('footnote_block_open', '', 1);
