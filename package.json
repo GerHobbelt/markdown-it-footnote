@@ -33,9 +33,9 @@
     "access": "public"
   },
   "devDependencies": {
-    "@gerhobbelt/markdown-it": "12.0.6-56",
-    "@gerhobbelt/markdown-it-testgen": "0.1.6-19",
-    "@gerhobbelt/prepend-header": "1.1.0-7",
+    "@gerhobbelt/markdown-it": "12.0.6-57",
+    "@gerhobbelt/markdown-it-testgen": "0.1.6-20",
+    "@gerhobbelt/prepend-header": "1.1.0-8",
     "@typescript-eslint/eslint-plugin": "4.28.1",
     "@typescript-eslint/parser": "4.28.1",
     "argparse": "2.0.1",

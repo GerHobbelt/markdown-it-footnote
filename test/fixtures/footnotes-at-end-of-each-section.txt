@@ -25,17 +25,23 @@ css: |
         text-decoration: none;
     }
 
+    sup.footnote-ref-combiner {
+        /* display: none; */
+        /* opacity: 0; */
+        margin-left: -0.2em;   /* compensate for left-side link's SUP having 0.3em padding */
+    }
+
     /* footnote styling in the footnote sections */
     li.footnote-item {
         list-style-type: none;
-        /* position:  relative; */
+        position:  relative;        /* used to position the BACKREF links */
 
         border-top: 1px solid #adadad;
         margin-left: 0;
     }
     span.footnote-caption {
-        /* position: absolute; */
-        float:  left;
+        position: absolute;
+        xfloat: left;
         margin-left:  -2.2em;
 
         margin-top: -1px;
@@ -53,11 +59,14 @@ css: |
         width: 2.2em;
         box-sizing: border-box;
         display: block;
-        xborder-right: solid 2px white;
         margin-right: 0;
         padding-bottom: 0.3em;   /* make the footnote caption symbol look more centered while sticking to the baseline. */
         padding-left: 0.1em;
     }
+    span.footnote-caption > sup {
+        background-color: #f3f3f3a0
+    }
+
     /* correct for Chrome jumpiness when we scale the page */
     .footnote-content p:first-of-type {
         margin-block-start: 0;
@@ -70,18 +79,39 @@ css: |
         text-decoration: none;
         font-size:  65%;
         vertical-align: bottom;
-        padding-left: 0.5em;
+        padding-left: 0.05em;
+        padding-right: 0.05em;
 
-        float: right;
+        position: absolute;
+        /* right: 0.5em; */
+        bottom: -1.4em;        /* relative to LI */
+
+        xfloat: right;
         display: inline-block;
         background-color: #b3b3b329;
+    }
+
+    a.footnote-backref-R0 {
+        right: 0.1em; 
+    }
+    a.footnote-backref-R1 {
+        right: 1.3em; 
+    }
+    a.footnote-backref-R2 {
+        right: 2.5em; 
+    }
+    a.footnote-backref-R3 {
+        right: 3.7em; 
+    }
+    a.footnote-backref-R4 {
+        right: 4.9em; 
     }
 
     /* rendering sidenotes, section notes' sections and endnote sections: */
     hr.footnotes-sep {
         display:  none;
     }
-    section.footnotes {
+    aside.footnotes {
         padding-left: 0.5em;
         border-left: solid 2em orange;
         padding-top: 0.2em;
@@ -91,9 +121,13 @@ css: |
         margin-top: 0.5em;
         margin-bottom: 2em;
     }
-    section.footnotes > ul.footnotes-list {
+    aside.footnotes > h3 {
+        color: #ff9614;
+    }
+    aside.footnotes > ul.footnotes-list {
         margin-top: 0;
-        margin-bottom: -1em;  /* correct for P tag's margin-block-end: 1em */
+        /* margin-bottom: -1em; */  /* correct for P tag's margin-block-end: 1em */
+        margin-bottom: -0.2em;      /* compensates for dropped BACKREF links */
 
         /* use gradient to fake a bar that cannot be placed there with border style,
            because we want the footnote marker to stick out to the other side of this 'border'. */
@@ -103,8 +137,11 @@ css: |
         padding-left: 2.2em;
     }
 
-    aside.footnotes {
+    aside.footnotes-category-aside {
         float: left;
+        clear: left;
+        /* position: absolute; */
+
         /* move into the left edge of BODY: */
         margin-left: -19.5em;
         width: 19em;
@@ -116,7 +153,6 @@ css: |
         margin-top: -3em;
         /* fix for the margin-top hack:  make sure multiple loating sidenotes don't overlap and have a bit of space between them (0.5em). */
         margin-bottom: 3.5em;
-        clear: left;
 
         padding-left: 0.5em;
         border-right: solid 1em #34af39;
@@ -124,12 +160,14 @@ css: |
         padding-bottom: 0.2em;
         border-top: solid 4px #3b8c27;
         border-bottom: solid 1px #52a563;
+        border-left: solid 1px #3b8c27;
 
         background: #ffffffa6;
     }
-    aside.footnotes > ul.footnotes-list {
+    aside.footnotes-category-aside > ul.footnotes-list {
         margin-top: 0;
-        margin-bottom: -1em;  /* correct for P tag's margin-block-end: 1em */
+        /* margin-bottom: -1em; */  /* correct for P tag's margin-block-end: 1em */
+        margin-bottom: -0.2em;      /* compensates for dropped BACKREF links */
 
         /* use gradient to fake a bar that cannot be placed there with border style,
            because we want the footnote marker to stick out to the other side of this 'border'. */
@@ -140,34 +178,45 @@ css: |
 
         font-size: 85%;
     }
+
     /* force a bit of breathing room in the floating sidenote between the ASIDE border and the P text. */
-    aside.footnotes p {
+    aside.footnotes-category-aside p {
         margin-right: 0.3em;
     }
-    aside.footnotes > h3 {
+    aside.footnotes-category-aside > h3 {
         margin: 0;
         color: #3b8c27;
 
         font-size: 85%;
     }
-    section.footnotes > h3 {
-        color: #ff9614;
-    }
 
     /* ... and then the real horror begins:  correcting floats for NESTED notes:  */
-    section.footnotes aside.footnotes {
+    aside.footnotes aside.footnotes-category-aside {
         margin-left: -24em;
     }
-    section.footnotes li aside.footnotes {
+    aside.footnotes li aside.footnotes-category-aside {
         margin-left: -26.5em;
     }
     /* ... and FLOATING sidenotes inside LISTS */
-    li aside.footnotes {
+    li aside.footnotes-category-aside {
         margin-left: -22em;
     }
     /* ... and the error cases that are simply too much work otherwise: */
-    #fnsection-12 {
+    #fnsection-13 {
         margin-left: -24em;
+    }
+
+    /* more legible footnote symbols */
+    sup.footnote-ref, sup.footnote-caption {
+        font-family: serif;
+    }
+    sup.footnote-ref {
+        margin-right: 0.3em;
+        margin-left: 0.15em;
+    }
+    a.footnote-ref {
+        font-weight: bold;
+        text-decoration: none;
     }
     </style>
 ------

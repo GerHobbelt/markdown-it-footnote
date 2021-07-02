@@ -106,26 +106,24 @@ export default function footnote_plugin(md, plugin_options) {
   plugin_options = Object.assign({}, plugin_options, default_plugin_options);
 
   function determine_mode(mode: string, default_mode: string) {
+    let override = null;
     if (plugin_options.modeOverride && '>:='.includes(plugin_options.modeOverride)) {
-      return {
-        mode: plugin_options.modeOverride,
-        fromInput: false
-      };
+      override = plugin_options.modeOverride;
     }
     if ('>:='.includes(mode)) {
       return {
-        mode,
+        mode: override || mode,
         fromInput: true
       };
     }
     return {
-      mode: default_mode,
+      mode: override || default_mode,
       fromInput: false
     };
   }
 
   function determine_footnote_symbol(idx) {
-    if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) { return idx + 1; }
+    if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) { return idx; }
     const len = plugin_options.numberSequence.length;
     if (idx >= len) {
       // is last slot numeric or alphabetical?
@@ -170,7 +168,7 @@ export default function footnote_plugin(md, plugin_options) {
     const info = env.footnotes.list[token.meta.id];
     assert.ok(info != null);
     const labelOverride = info.labelOverride;
-    const mark = labelOverride || info.label || determine_footnote_symbol(token.meta.id);
+    const mark = labelOverride /* || info.label */ || determine_footnote_symbol(token.meta.id);
     const n = '' + mark; // = mark.toString();
     assert.ok(n.length > 0);
     return n;
@@ -224,7 +222,7 @@ export default function footnote_plugin(md, plugin_options) {
     assert(tok.meta != null);
     const header = (tok.markup ? `<h3 class="footnotes-header">${ tok.markup }</h3>` : '');
     const category = tok.meta.category;
-    return `<hr class="footnotes-sep footnote-category-${ category }" id="fnsection-hr-${ tok.meta.sectionId }"${ options.xhtmlOut ? ' /' : '' }><aside class="footnotes footnote-category-${ category }" id="fnsection-${ tok.meta.sectionId }">${ header }<ul class="footnotes-list">\n`;
+    return `<hr class="footnotes-sep footnotes-category-${ category }" id="fnsection-hr-${ tok.meta.sectionId }"${ options.xhtmlOut ? ' /' : '' }><aside class="footnotes footnotes-category-${ category }" id="fnsection-${ tok.meta.sectionId }">${ header }<ul class="footnotes-list">\n`;
   }
 
   function render_footnote_block_close(tokens, idx, options) {
@@ -258,11 +256,14 @@ export default function footnote_plugin(md, plugin_options) {
   }
 
   function render_footnote_anchor_backref(tokens, idx, options, env, slf) {
+    const tok = tokens[idx];
+    assert(tok != null);
+    assert(tok.meta != null);
     let refid = render_footnote_n(tokens, idx, false);
     refid = plugin_options.anchorFn(refid, false, tokens, idx, options, env, slf);
 
     /* ↩ with escape code to prevent display as Apple Emoji on iOS */
-    return ` <a href="#fnref${ refid }" class="footnote-backref">\u21a9\uFE0E</a>`;
+    return ` <a href="#fnref${ refid }" class="footnote-backref footnote-backref-${ tok.meta.subId } footnote-backref-R${ tok.meta.backrefCount - tok.meta.subId - 1 }">\u21a9\uFE0E</a>`;
   }
 
 
@@ -320,6 +321,8 @@ export default function footnote_plugin(md, plugin_options) {
       console.assert(!!infoRec, 'expects non-NULL footnote info record');
     }
 
+    const idMap = env.footnotes.idMap;
+
     // now check if the idMap[] has been set up already as well. This depends on
     // when WE are invoked (`at_definition`) and the configured `options.sortOrder`:
     switch (plugin_options.sortOrder) {
@@ -327,24 +330,24 @@ export default function footnote_plugin(md, plugin_options) {
     default:
     case 0:
       // basically, this means: order as-is
-      if (!env.footnotes.idMap[footnoteId]) {
-        env.footnotes.idMap[footnoteId] = ++env.footnotes.idMapCounter;
+      if (!idMap[footnoteId]) {
+        idMap[footnoteId] = ++env.footnotes.idMapCounter;
       }
       break;
 
     // 1: first *reference* in the text
     case 1:
-      if (!at_definition && !env.footnotes.idMap[footnoteId]) {
+      if (!at_definition && !idMap[footnoteId]) {
         // first reference is now!
-        env.footnotes.idMap[footnoteId] = ++env.footnotes.idMapCounter;
+        idMap[footnoteId] = ++env.footnotes.idMapCounter;
       }
       break;
 
     // 2: *definition* in the text
     case 2:
-      if (at_definition && !env.footnotes.idMap[footnoteId]) {
+      if (at_definition && !idMap[footnoteId]) {
         // definition is now!
-        env.footnotes.idMap[footnoteId] = ++env.footnotes.idMapCounter;
+        idMap[footnoteId] = ++env.footnotes.idMapCounter;
       }
       break;
 
@@ -760,12 +763,12 @@ export default function footnote_plugin(md, plugin_options) {
         inject_tokens = inject_tokens.concat(fn.tokens || []);
       }
 
-      let lastParagraph;
-      if (inject_tokens[inject_tokens.length - 1].type === 'paragraph_close') {
-        lastParagraph = inject_tokens.pop();
-      } else {
-        lastParagraph = null;
-      }
+      //let lastParagraph;
+      //if (inject_tokens[inject_tokens.length - 1].type === 'paragraph_close') {
+      //  lastParagraph = inject_tokens.pop();
+      //} else {
+      //  lastParagraph = null;
+      //}
 
       const cnt = fn.count;
       if (cnt < 1) {
@@ -777,14 +780,15 @@ export default function footnote_plugin(md, plugin_options) {
           token.meta = {
             id,
             subId: j,
+            backrefCount: cnt,
             category
           };
           inject_tokens.push(token);
         }
 
-        if (lastParagraph) {
-          inject_tokens.push(lastParagraph);
-        }
+        //if (lastParagraph) {
+        //  inject_tokens.push(lastParagraph);
+        //}
 
         token = new state.Token('footnote_close', '', -1);
         token.meta = {
@@ -815,7 +819,7 @@ export default function footnote_plugin(md, plugin_options) {
 
   // Glue footnote tokens into appropriate slots of token stream.
   function footnote_tail(state, startLine, endLine, silent) {
-    let i, l, j, t, lastParagraph, token, current, currentRefToken,
+    let i, l, j, t, token, current, currentRefToken,
         insideRef = false,
         refTokens = {};
 
@@ -894,29 +898,45 @@ export default function footnote_plugin(md, plugin_options) {
       // to turn this into an alphabetically-by-label sort order, where
       // a `footnoteId` based index will produce the order of appearance.
       const reIdMap = [];
-      for (let i = 0; i < list.length; i++) {
-        reIdMap[i] = i;
+      for (let i = 1; i < list.length; i++) {
+        reIdMap[i - 1] = i;
       }
-      reIdMap.sort((indexA, indexB) => {
-        const infoA = list[indexA];
-        const infoB = list[indexB];
+      reIdMap.sort((idA, idB) => {
+        const infoA = list[idA];
+        const infoB = list[idB];
+        assert.ok(infoA);
+        assert.ok(infoB);
 
-        if (!infoA) return 1;
-        if (!infoB) return -1;
         // is any of these an inline footnote, i.e. without any label yet? Produce a fake label for sorting then!
         //
-        // As stated elsewhere: inline section_notes and end_notes will end up above everyone else in this sort order mode.
-        const labelA = infoA.label || `\x01${ infoA.id }`;
-        const labelB = infoB.label || `\x01${ infoB.id }`;
+        // As stated elsewhere: inline section_notes and end_notes will end up among everyone else in this sort order mode.
+        assert.ok(infoA.id === idA);
+        assert.ok(infoB.id === idB);
+        const labelA = infoA.labelOverride /* || infoA.label */ || ('' + infoA.id);
+        const labelB = infoB.labelOverride /* || infoB.label */ || ('' + infoB.id);
+        // sort numerically when possible & sensible; otherwise sort alphanumerically.
+        if (isFinite(labelA) && isFinite(labelB)) {
+          return +labelA - +labelB;
+        }
         return labelA.localeCompare(labelB);
       });
-      //console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap);
+      console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map((idx) => {
+        const info = list[idx];
+        if (!info) return '---';
+        assert.ok(info.id === idx);
+        return {
+          idx,
+          compareLabel: info.labelOverride /* || info.label */ || ('' + info.id),
+          info
+        };
+      }), reIdMap);
 
       // Now turn this into a sort order map:
-      for (let i = 0; i < list.length; i++) {
-        const prio = reIdMap[i];
-        idMap[i] = prio;
+      for (let prio = 0; prio < reIdMap.length; prio++) {
+        const id = reIdMap[prio];
+        idMap[id] = prio;
       }
+      console.error('@@@@@@@@@@@@@@@@@', idMap);
       break;
     }
 
@@ -989,7 +1009,6 @@ export default function footnote_plugin(md, plugin_options) {
         if (more_footnote_reference_blocks_follow_immediately(tokens, i + 1)) {
           continue;
         } else {
-          const idMap = state.env.footnotes.idMap;
           const section_ids = [];
           for (const id of section_list.values()) {
             section_ids.push(id);
@@ -1008,12 +1027,13 @@ export default function footnote_plugin(md, plugin_options) {
 
     // Now process the endnotes:
     {
-      const idMap = state.env.footnotes.idMap;
       const end_ids = [];
       for (const id of end_list.values()) {
         end_ids.push(id);
       }
+      console.error('@@@@@@@@@@@@@@ ', { end_ids });
       end_ids.sort(footnote_print_comparer);
+      console.error('@@@@@@@@@@@@@@ after sort', { end_ids });
 
       place_footnote_definitions_at(state, tokens.length, end_ids, 'end');
       //tokens = state.tokens;
