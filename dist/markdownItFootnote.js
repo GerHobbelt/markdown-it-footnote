@@ -20,7 +20,7 @@ function captionFnDefault(n, tokens, idx, options, env, slf) {
   return '' + n;
 }
 
-function headerFnDefault(state, category) {
+function headerFnDefault(state, category, env, plugin_options) {
   switch (category) {
     case 'aside':
       return 'Side Notes';
@@ -33,6 +33,48 @@ function headerFnDefault(state, category) {
   }
 
   return '';
+}
+
+function determine_footnote_symbol(idx, info, env, plugin_options) {
+  // rule to construct the printed label:
+  //
+  //     mark = labelOverride  /* || info.label */  || idx;
+  const label = info.labelOverride;
+
+  if (label) {
+    return label;
+  }
+
+  if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) {
+    return '' + idx;
+  }
+
+  const len = plugin_options.numberSequence.length;
+
+  if (idx >= len) {
+    // is last slot numeric or alphanumerically?
+    const slot = plugin_options.numberSequence[len - 1];
+
+    if (Number.isFinite(slot)) {
+      const delta = idx - len + 1;
+      return '' + (slot + delta);
+    } // non-numerical last slot --> duplicate, triplicate, etc.
+
+
+    const dupli = idx / len | 0; // = int(x mod N)
+
+    const remainder = idx % len;
+    const core = plugin_options.numberSequence[remainder];
+    let str = '' + core;
+
+    for (let i = 1; i < dupli; i++) {
+      str += core;
+    }
+
+    return str;
+  }
+
+  return '' + plugin_options.numberSequence[idx];
 }
 /*
 ref:
@@ -59,6 +101,7 @@ const default_plugin_options = {
   anchorFn: anchorFnDefault,
   captionFn: captionFnDefault,
   headerFn: headerFnDefault,
+  mkLabel: determine_footnote_symbol,
   // see also https://www.editage.com/insights/footnotes-in-tables-part-1-choice-of-footnote-markers-and-their-sequence
   // why asterisk/star is not part of the default footnote marker sequence.
   //
@@ -88,8 +131,20 @@ const default_plugin_options = {
   // 0: first *appearance* in the text
   // 1: first *reference* in the text
   // 2: *definition* in the text
-  // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
-  sortOrder: 3,
+  // 3: sorted alphanumerically by *coded* label,
+  //    i.e. *numeric* labels are sorted in numeric order (so `10` comes AFTER `7`!),
+  //    while all others are sorted using `String.localeCompare()`. When labels have
+  //    a *numeric leading*, e.g. `71geo` --> `71`, that part is sorted numerically first.
+  //
+  //    Here 'coded label' means the label constructed from the reference ids and label overrides
+  //    as used in the markdown source, using the expression
+  //           labelOverride || reference || id
+  //    which gives for these examples (assuming them to be the only definitions in your input):
+  //           [^refA]: ...      -->  null || 'refA' || 1
+  //           [^refB LBL]: ...  -->  'LBL' || 'refB' || 2
+  // 4: sorted alphanumerically by *printed* label
+  //    which is like mode 3, but now for the label as will be seen in the *output*!
+  sortOrder: 4,
   // what to print between bunched-together footnote references, i.e. the '+' in `blabla¹⁺²`
   refCombiner: ','
 };
@@ -118,39 +173,6 @@ function footnote_plugin(md, plugin_options) {
     };
   }
 
-  function determine_footnote_symbol(idx) {
-    if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) {
-      return idx;
-    }
-
-    const len = plugin_options.numberSequence.length;
-
-    if (idx >= len) {
-      // is last slot numeric or alphabetical?
-      const slot = plugin_options.numberSequence[len - 1];
-
-      if (Number.isFinite(slot)) {
-        const delta = idx - len + 1;
-        return slot + delta;
-      } // non-numerical last slot --> duplicate, triplicate, etc.
-
-
-      const dupli = idx / len | 0; // = int(x mod N)
-
-      const remainder = idx % len;
-      const core = plugin_options.numberSequence[remainder];
-      let str = core;
-
-      for (let i = 1; i < dupli; i++) {
-        str += core;
-      }
-
-      return str;
-    }
-
-    return plugin_options.numberSequence[idx];
-  }
-
   function render_footnote_n(tokens, idx, excludeSubId) {
     const mark = tokens[idx].meta.id;
     strict.ok(Number.isFinite(mark));
@@ -171,14 +193,9 @@ function footnote_plugin(md, plugin_options) {
     strict.ok(token != null);
     const info = env.footnotes.list[token.meta.id];
     strict.ok(info != null);
-    const labelOverride = info.labelOverride;
-    const mark = labelOverride
-    /* || info.label */
-    || determine_footnote_symbol(token.meta.id);
-    const n = '' + mark; // = mark.toString();
-
-    strict.ok(n.length > 0);
-    return n;
+    const mark = plugin_options.mkLabel(token.meta.id, info, env, plugin_options);
+    strict.ok(mark.length > 0);
+    return mark;
   }
 
   function render_footnote_anchor_name(tokens, idx, options, env, slf) {
@@ -353,7 +370,7 @@ function footnote_plugin(md, plugin_options) {
         }
 
         break;
-      // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
+      // 3: sorted alphanumerically by label (inline footnotes will end up at the top, before all other notes)
 
       case 3:
         // just note the footnoteId now; this must be re-ordered later when we have collected all footnotes.
@@ -811,7 +828,7 @@ function footnote_plugin(md, plugin_options) {
     let inject_tokens = [];
     const foontnote_spec_list = state.env.footnotes.list;
     let token = new state.Token('footnote_block_open', '', 1);
-    token.markup = plugin_options.headerFn(state, category);
+    token.markup = plugin_options.headerFn(state, category, state.env, plugin_options);
     token.meta = {
       sectionId: ++state.env.footnotes.sectionCounter,
       category
@@ -969,11 +986,11 @@ function footnote_plugin(md, plugin_options) {
       case 2:
         // order is specified in the `idMap` already.
         break;
-      // 3: sorted alphabetically by label (inline footnotes will end up at the top, before all other notes)
+      // 3: sorted alphanumerically by label (inline footnotes will end up at the top, before all other notes)
 
       case 3:
         // the `idMap[]` array has not been set up and must be produced
-        // to turn this into an alphabetically-by-label sort order, where
+        // to turn this into an alphanumerically-by-label sort order, where
         // a `footnoteId` based index will produce the order of appearance.
         const reIdMap = [];
 
@@ -990,19 +1007,39 @@ function footnote_plugin(md, plugin_options) {
           // As stated elsewhere: inline section_notes and end_notes will end up among everyone else in this sort order mode.
 
           strict.ok(infoA.id === idA);
-          strict.ok(infoB.id === idB);
-          const labelA = infoA.labelOverride
-          /* || infoA.label */
-          || '' + infoA.id;
-          const labelB = infoB.labelOverride
-          /* || infoB.label */
-          || '' + infoB.id; // sort numerically when possible & sensible; otherwise sort alphanumerically.
+          strict.ok(infoB.id === idB); // Split a "sort label" up into its numerical part and the tail. Note that we don't call
+          // it 'tail' but 'label', because we will need to compare the ENTIRE LABEL using string comparison
+          // when the numeric leaders are identical, so as to ensure that 'labels' such as `00000` will sort
+          // as 'higher' than `000`, both of which will be rated as numerically identical!
 
-          if (isFinite(labelA) && isFinite(labelB)) {
-            return +labelA - +labelB;
+          function to_atoms(label) {
+            // now extract number or numerical leader part.
+            //
+            // Only accept OBVIOUS, SIMPLE NUMERIC LEADERS! This is about *legibility*
+            // of those numrical leaders, not a pedantic "what is possibly legally numeric"
+            // challenge. Hence we DO NOT accept leading +/- and only a decimal dot when
+            // there's a decimal number BEFORE it, such as in `5.1hack` --> `5.1`, but NOT
+            // `.42oz`!
+            //
+            // Do not use `nmr = +lbl` as that would treat labels such as `0xf4` as hexadecimal numbers,
+            // which we DO NOT want to happen.
+            const m = label.match(/^\d+(?:\.\d+)?/) || ['x'];
+            const nmr = +m[0] || Infinity; // non-numeric labels are rated NUMEICALLY HIGHER than any numerical leader.
+
+            return {
+              label,
+              number: nmr
+            };
           }
 
-          return labelA.localeCompare(labelB);
+          const labelA = infoA.labelOverride || infoA.label || '' + infoA.id;
+          const labelB = infoB.labelOverride || infoB.label || '' + infoB.id;
+          const atomA = to_atoms(labelA);
+          const atomB = to_atoms(labelB);
+          const diff = atomA.number - atomB.number;
+          return diff || atomA.label.localeCompare(atomB.label); // ^^^^^^^ shorthand for:
+          //
+          // if (isNaN(diff) || diff === 0) then stringcompare else numeric-difference
         });
         console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map(idx => {
           const info = list[idx];

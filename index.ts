@@ -34,6 +34,42 @@ function headerFnDefault(state, category, env, plugin_options) {
   return '';
 }
 
+function determine_footnote_symbol(idx: number, info, env, plugin_options): string {
+  // rule to construct the printed label:
+  //
+  //     mark = labelOverride  /* || info.label */  || idx;
+  const label = info.labelOverride;
+  if (label) {
+    return label;
+  }
+  if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) {
+    return '' + idx;
+  }
+  const len = plugin_options.numberSequence.length;
+  if (idx >= len) {
+    // is last slot numeric or alphanumerically?
+    const slot = plugin_options.numberSequence[len - 1];
+    if (Number.isFinite(slot)) {
+      const delta = idx - len + 1;
+      return '' + (slot + delta);
+    }
+
+    // non-numerical last slot --> duplicate, triplicate, etc.
+    const dupli = (idx / len) | 0;  // = int(x mod N)
+    const remainder = idx % len;
+    const core = plugin_options.numberSequence[remainder];
+    let str = '' + core;
+    for (let i = 1; i < dupli; i++) {
+      str += core;
+    }
+    return str;
+  }
+
+  return '' + plugin_options.numberSequence[idx];
+}
+
+
+
 
 /*
 ref:
@@ -133,40 +169,6 @@ export default function footnote_plugin(md, plugin_options) {
       mode: override || default_mode,
       fromInput: false
     };
-  }
-
-  function determine_footnote_symbol(idx: number, info, env, plugin_options): string {
-    // rule to construct the printed label:
-    //
-    //     mark = labelOverride  /* || info.label */  || idx;
-    const label = info.labelOverride;
-    if (label) {
-      return label;
-    }
-    if (plugin_options.numberSequence == null || plugin_options.numberSequence.length === 0) {
-      return '' + idx;
-    }
-    const len = plugin_options.numberSequence.length;
-    if (idx >= len) {
-      // is last slot numeric or alphanumerically?
-      const slot = plugin_options.numberSequence[len - 1];
-      if (Number.isFinite(slot)) {
-        const delta = idx - len + 1;
-        return '' + (slot + delta);
-      }
-
-      // non-numerical last slot --> duplicate, triplicate, etc.
-      const dupli = (idx / len) | 0;  // = int(x mod N)
-      const remainder = idx % len;
-      const core = plugin_options.numberSequence[remainder];
-      let str = '' + core;
-      for (let i = 1; i < dupli; i++) {
-        str += core;
-      }
-      return str;
-    }
-
-    return '' + plugin_options.numberSequence[idx];
   }
 
   function render_footnote_n(tokens, idx, excludeSubId) {
