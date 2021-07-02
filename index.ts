@@ -113,7 +113,11 @@ const bunched_mode_classes = [ '', 'footnote-bunched-ref-ref', 'footnote-bunched
 
 
 function generateFootnoteRefHtml(id, caption, refId, bunched_footnote_ref_mode, renderInfo: RenderInfoParameters) {
-  return `<a class="footnote-ref ${ bunched_mode_classes[bunched_footnote_ref_mode] }" href="#fn${ id }" id="fnref${ refId }">${ renderInfo.tokens[renderInfo.idx].meta.text || '' }<sup class="footnote-ref">${ caption }</sup></a>` +
+  let localOverride = renderInfo.tokens[renderInfo.idx].meta.text;
+  if (localOverride) {
+    localOverride = `<span class="footnote-ref-extra-text">${ localOverride }</span>`;
+  }
+  return `<a class="footnote-ref ${ bunched_mode_classes[bunched_footnote_ref_mode] }" href="#fn${ id }" id="fnref${ refId }">${ localOverride || '' }<sup class="footnote-ref">${ caption }</sup></a>` +
     (bunched_footnote_ref_mode !== 0 ? `<sup class="footnote-ref-combiner ${ bunched_mode_classes[bunched_footnote_ref_mode] }">${ renderInfo.plugin_options.refCombiner || '' }</sup>` : '');
 }
 
@@ -600,13 +604,13 @@ export default function footnote_plugin(md, plugin_options) {
     pos++;
 
     label = state.src.slice(start + 2, labelEnd);
-    let text;
+    let labelOverride;
     if (label.match(/^(\S+)\s+(.+)$/)) {
       label = RegExp.$1;
-      text = RegExp.$2;
+      labelOverride = RegExp.$2.trim();
     }
 
-    //console.error('extracted label = ', { label, text, labelEnd, pos, start });
+    //console.error('extracted label = ', { label, labelOverride, labelEnd, pos, start });
 
     // Now see if we already have a footnote ID for this footnote label:
     // fetch it if we have one and otherwise produce a new one so everyone
@@ -625,7 +629,7 @@ export default function footnote_plugin(md, plugin_options) {
     //
     const infoRec = obtain_footnote_info_slot(state.env, label, true);
 
-    infoRec.labelOverride = text;
+    infoRec.labelOverride = labelOverride;
     infoRec.mode = mode;
     infoRec.content = state.src.slice(pos, max);
 
@@ -800,7 +804,7 @@ export default function footnote_plugin(md, plugin_options) {
     label = state.src.slice(start + 2, pos - 1);
     if (!label || !label.match(/^(\S+)\s+(.+)$/)) { return false; }
     label = RegExp.$1;
-    const text = RegExp.$2;
+    const text = RegExp.$2.trim();
 
     const infoRec = obtain_footnote_info_slot(state.env, label, false);
 
@@ -812,7 +816,8 @@ export default function footnote_plugin(md, plugin_options) {
       token = state.push('footnote_ref', '', 0);
       token.meta = {
         id: infoRec.id,
-        subId: footnoteSubId
+        subId: footnoteSubId,
+        text
       };
 
       update_end_of_block_marker(state, infoRec.id);
