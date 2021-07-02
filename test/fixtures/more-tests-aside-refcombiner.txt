@@ -22,27 +22,7 @@ isn't indented.
 This paragraph won't be part of the note neither, because it
 isn't indented.
 .
-<p>Here is a footnote reference,<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> and another.<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup></p>
-<p>This paragraph won't be part of the note, because it
-isn't indented.</p>
-<p>This paragraph won't be part of the note neither, because it
-isn't indented.</p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>Here's one with multiple blocks.</p>
-<p>Subsequent paragraphs are indented to show that they
-belong to the previous footnote.</p>
-<pre><code>{ some.code }
-</code></pre>
-<p>The whole paragraph can be indented, or just the first
-line.  In this way, multi-paragraph footnotes work like
-multi-paragraph list items. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
+xxx
 .
 
 

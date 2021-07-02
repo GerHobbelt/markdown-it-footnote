@@ -1,5 +1,6 @@
 
-Pandoc example:
+Let's do roman numerals for footnote markers, shall we?
+
 .
 Here is a footnote reference,[^1] and another.[^longnote]
 
@@ -19,82 +20,24 @@ belong to the previous footnote.
 This paragraph won't be part of the note, because it
 isn't indented.
 
-This paragraph won't be part of the note neither, because it
-isn't indented.
-.
-<p>Here is a footnote reference,<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup> and another.<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup></p>
-<p>This paragraph won't be part of the note, because it
-isn't indented.</p>
-<p>This paragraph won't be part of the note neither, because it
-isn't indented.</p>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li tabindex="-1" id="fn1" class="footnote-item"><p>Here is the footnote. <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li tabindex="-1" id="fn2" class="footnote-item"><p>Here's one with multiple blocks.</p>
-<p>Subsequent paragraphs are indented to show that they
-belong to the previous footnote.</p>
-<pre><code>{ some.code }
-</code></pre>
-<p>The whole paragraph can be indented, or just the first
-line.  In this way, multi-paragraph footnotes work like
-multi-paragraph list items. <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
-.
-
-
-
-We support inline notes too as ASIDE blocks after the active paragraph:
-
-.
-Here is an inline note.^[Inlines notes are easier to write, since
+Here is an inline note that's turned endnote^[:Inline notes are easier to write, since
 you don't have to pick an identifier and move down to type the
 note.]
 
-Followed by yet another paragraph of regular text.
-.
-xxx
-.
+Note these *bunched together footnote references*[^a1][^a2][^a3][^a4][^a5][^a6][^a7][^a8][^a9][^a10][^a11][^a12]. There's a bit of extra HTML (and some CSS required) to help style such *bunches*! Also note `options.refCombiner` for this.
 
-
-
-
-Duplicate footnotes:
-
-.
-Note [^xxxxx].
-
-Also note [^xxxxx]
-
-[^xxxxx]: foo
-
-Tail A.
-
-Tail B.
-.
-xxx
-.
-
-
-Now what should happen when a footnote is referenced AFTER it's been defined? Point back at the EARLIER footnote block, surely!
-
-.
-[^xxxxx] [^yyyyy]
-
-[^xxxxx]: foo
-    xyz
-
-[^yyyyy]: foo
-   abc
-
-Intermission.
-
-Recurring: note[^yyyyy].
-
-And the other dude[^xxxxx] too.
+[^a1]: foo
+[^a2]: foo
+[^a3]: foo
+[^a4]: foo
+[^a5]: foo
+[^a6]: foo
+[^a7]: foo
+[^a8]: foo
+[^a9]: foo
+[^a10]: foo
+[^a11]: foo
+[^a12]: foo
 .
 xxx
 .

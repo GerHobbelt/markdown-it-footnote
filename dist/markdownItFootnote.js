@@ -187,7 +187,7 @@ const default_plugin_options = {
 function footnote_plugin(md, plugin_options) {
   const parseLinkLabel = md.helpers.parseLinkLabel,
         isSpace = md.utils.isSpace;
-  plugin_options = Object.assign({}, plugin_options, default_plugin_options);
+  plugin_options = Object.assign({}, default_plugin_options, plugin_options);
 
   function determine_mode(mode, default_mode) {
     let override = null;
@@ -235,6 +235,7 @@ function footnote_plugin(md, plugin_options) {
     const info = renderInfo.env.footnotes.list[token.meta.id];
     strict.ok(info != null);
     const mark = plugin_options.mkLabel(token.meta.id, info, renderInfo);
+    console.error('-->', { id: token.meta.id, mark })
     strict.ok(mark.length > 0);
     return mark;
   }
@@ -372,7 +373,6 @@ function footnote_plugin(md, plugin_options) {
     }
 
     if (!env.footnotes) {
-      console.error('ADD FOOTNOTES LIST', env);
       env.footnotes = {
         // map label tto ID:
         refs: {},
@@ -569,7 +569,6 @@ function footnote_plugin(md, plugin_options) {
     }
 
     const mode = mode_rec.mode;
-    console.error('@#$%^&* DEF1:', mode);
 
     if (pos + 1 >= max || state.src.charCodeAt(++pos) !== 0x20
     /* space */
@@ -583,7 +582,6 @@ function footnote_plugin(md, plugin_options) {
 
     pos++;
     const labelInfo = decode_label(state.src.slice(start + 2, labelEnd), true);
-    console.error('@#$%^&* DEF2:', labelInfo);
 
     if (!labelInfo) {
       return false;
@@ -709,8 +707,7 @@ function footnote_plugin(md, plugin_options) {
     }
 
     const mode = mode_rec.mode;
-    labelEnd = parseLinkLabel(state, start + 1);
-    console.error('@#$%^&* INLINE:', labelEnd); // parser failed to find ']', so it's not a valid note
+    labelEnd = parseLinkLabel(state, start + 1); // parser failed to find ']', so it's not a valid note
 
     if (labelEnd < 0) {
       return false;
@@ -832,7 +829,6 @@ function footnote_plugin(md, plugin_options) {
 
     pos++;
     const labelInfo = decode_label(state.src.slice(start + 2, pos - 1), false);
-    console.error('@#$%^&* REF+TEXT:', labelInfo);
 
     if (!labelInfo || !labelInfo.extraText) {
       return false;
@@ -910,7 +906,6 @@ function footnote_plugin(md, plugin_options) {
 
     pos++;
     const labelInfo = decode_label(state.src.slice(start + 2, pos - 1), true);
-    console.error('@#$%^&* REF:', labelInfo);
 
     if (!labelInfo) {
       return false;
@@ -922,8 +917,6 @@ function footnote_plugin(md, plugin_options) {
     if (labelInfo.labelOverride) {
       infoRec.labelOverride = labelInfo.labelOverride;
     }
-
-    console.error('@#$%^&* REF-OBTAIN:', infoRec, state.env.footnotes);
 
     if (!silent) {
       footnoteSubId = infoRec.count;
@@ -1038,7 +1031,6 @@ function footnote_plugin(md, plugin_options) {
     let i,
         current,
         insideRef = false;
-    console.error('@#$%^&* TAIL:', state.env.footnotes, state);
 
     if (!state.env.footnotes) {
       // no footnotes at all? --> filter out all 'footnote_mark_end_of_block' chunks:

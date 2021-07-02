@@ -29,8 +29,8 @@ function generate(fixturePath, md, env, dump_json) {
 
     (data.meta.skip ? describe.skip : describe)(desc, function () {
       data.fixtures.forEach(function (fixture, idx) {
-        //if ((fixture.first.range[0] - 1) !== 186) return;
-        
+        if ((fixture.first.range[0] - 1) !== 3) return;
+
         it(fixture.header + ' [line #' + (fixture.first.range[0] - 1) + ']', function () {
           const test_env = Object.assign({}, env || {});
           const rv = md.render(fixture.first.text, test_env);
@@ -101,7 +101,7 @@ describe('custom footnote ids and labels', function () {
     html: true,
     typographer: true
   }).use(plugin, {
-    anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
+    anchorFn: function (n, excludeSubId, tokens, idx, options, env, slf) {
       const token = tokens[idx];
       if (token.meta.label) {
         n = '-' + token.meta.label;
@@ -112,7 +112,7 @@ describe('custom footnote ids and labels', function () {
       return n;
     },
 
-    caption: function (n, tokens, idx, options, env, slf) {
+    captionFn: function (n, tokens, idx, options, env, slf) {
       const token = tokens[idx];
 
       return '{' + (token.meta.label || n) + '}';
@@ -157,6 +157,7 @@ describe('feature tests with custom captioner: Roman numerals', function () {
   }).use(plugin, {
     numberSequence: null,
     mkLabel: (idx, info, baseInfo) => {
+      console.error('MKLABEL', idx);
       const label = info.labelOverride;
       if (label) {
         return label;
@@ -171,12 +172,17 @@ describe('feature tests with custom captioner: Roman numerals', function () {
         rv += 'ix';
         return rv;
       }
-      while (idx > 5) {
-        rv += 'i';
-        idx--;
+      if (idx >= 5) {
+        rv += 'v';
+        idx -= 5;
+        while (idx > 0) {
+          rv += 'i';
+          idx--;
+        }
+        return rv;
       }
       return rv + [
-        'v', 'iv', 'iii', 'ii', 'i', ''
+        '', 'i', 'ii', 'iii', 'iv'
       ][idx];
     }
   });
@@ -190,7 +196,6 @@ describe('feature tests with custom captioner: Roman numerals', function () {
 
 describe('produce a complex test/demo file with many features combined', function () {
   const md = markdown_it({ linkify: true }).use(plugin, {
-    atDocumentEnd: false
   });
 
   // Check that defaults work correctly

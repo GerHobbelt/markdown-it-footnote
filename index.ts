@@ -259,7 +259,7 @@ export default function footnote_plugin(md, plugin_options) {
   const parseLinkLabel = md.helpers.parseLinkLabel,
         isSpace = md.utils.isSpace;
 
-  plugin_options = Object.assign({}, plugin_options, default_plugin_options);
+  plugin_options = Object.assign({}, default_plugin_options, plugin_options);
 
 
 
