@@ -117,7 +117,6 @@ describe('custom footnote ids and labels', function () {
       if (!excludeSubId && token.meta.subId > 0) {
         n += '~' + token.meta.subId;
       }
-      console.error({n, id, token, tokenInfo})
       return n;
     },
 
