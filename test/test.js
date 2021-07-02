@@ -66,60 +66,112 @@ function generate(fixturePath, md, env, use_diag_files) {
 }
 
 
-if (0) {
 
 
-  describe('footnote.txt', function () {
-    const md = markdown_it({ linkify: true }).use(plugin);
+describe('footnote.txt', function () {
+  const md = markdown_it({ linkify: true }).use(plugin);
+
+// Check that defaults work correctly
+  generate(path.join(__dirname, 'fixtures/footnote.txt'), md);
+});
+
+describe('custom docId in env', function () {
+  const md = markdown_it({ linkify: true }).use(plugin);
+
+// Now check that using `env.documentId` works to prefix IDs
+  generate(path.join(__dirname, 'fixtures/footnote-prefixed.txt'), md, { docId: 'test-doc-id' });
+});
+
+describe('custom footnote ids and labels', function () {
+  const md = markdown_it({
+    linkify: true,
+    html: true,
+    typographer: true
+  }).use(plugin, {
+    anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
+      const token = tokens[idx];
+      if (token.meta.label) {
+        n = '-' + token.meta.label;
+      }
+      if (!excludeSubId && token.meta.subId > 0) {
+        n += '~' + token.meta.subId;
+      }
+      return n;
+    },
+
+    caption: function (n, tokens, idx, options, env, slf) {
+      const token = tokens[idx];
+
+      return '{' + (token.meta.label || n) + '}';
+    }
+  });
+
+  generate(path.join(__dirname, 'fixtures/custom-footnotes.txt'), md);
+});
+
+
+describe('more feature tests with default plugin settings', function () {
+  const md = markdown_it({
+    linkify: true,
+    html: true,
+    typographer: true
+  }).use(plugin);
 
   // Check that defaults work correctly
-    generate(path.join(__dirname, 'fixtures/footnote.txt'), md);
+  generate(path.join(__dirname, 'fixtures/more-tests.txt'), md);
+});
+
+
+describe('feature tests with forced side-note plugin config', function () {
+  const md = markdown_it({
+    linkify: true,
+    html: true,
+    typographer: true
+  }).use(plugin, {
+    modeOverride: 'aside',
+    refCombiner: '//'
   });
 
-  describe('custom docId in env', function () {
-    const md = markdown_it({ linkify: true }).use(plugin);
+  // Check that defaults work correctly
+  generate(path.join(__dirname, 'fixtures/more-tests-aside-refcombiner.txt'), md);
+});
 
-  // Now check that using `env.documentId` works to prefix IDs
-    generate(path.join(__dirname, 'fixtures/footnote-prefixed.txt'), md, { docId: 'test-doc-id' });
-  });
-
-  describe('custom footnote ids and labels', function () {
-    const md = markdown_it({
-      linkify: true,
-      html: true,
-      typographer: true
-    }).use(plugin, {
-      anchor: function (n, excludeSubId, tokens, idx, options, env, slf) {
-        const token = tokens[idx];
-        if (token.meta.label) {
-          n = '-' + token.meta.label;
-        }
-        if (!excludeSubId && token.meta.subId > 0) {
-          n += '~' + token.meta.subId;
-        }
-        return n;
-      },
-
-      caption: function (n, tokens, idx, options, env, slf) {
-        const token = tokens[idx];
-
-        return '{' + (token.meta.label || n) + '}';
+describe('feature tests with custom captioner: Roman numerals', function () {
+  const md = markdown_it({
+    linkify: true,
+    html: true,
+    typographer: true
+  }).use(plugin, {
+    numberSequence: null,
+    mkLabel: (idx, info, baseInfo) => {
+      const label = info.labelOverride;
+      if (label) {
+        return label;
       }
-    });
-
-    generate(path.join(__dirname, 'fixtures/custom-footnotes.txt'), md);
+      // now convert idx to a roman number (lower case):
+      let rv = '';
+      while (idx >= 10) {
+        rv += 'x';
+        idx -= 10;
+      }
+      if (idx === 9) {
+        rv += 'ix';
+        return rv;
+      }
+      while (idx > 5) {
+        rv += 'i';
+        idx--;
+      }
+      return rv + [
+        'v', 'iv', 'iii', 'ii', 'i', ''
+      ][idx];
+    }
   });
 
+  // Check that defaults work correctly
+  generate(path.join(__dirname, 'fixtures/more-tests-roman.txt'), md);
+});
 
-  describe('footnotes get parked at the end of the containing section', function () {
-    const md = markdown_it({ linkify: true }).use(plugin, {
-      atDocumentEnd: false
-    });
-
-    // Check that defaults work correctly
-    generate(path.join(__dirname, 'fixtures/footnotes-at-end-of-each-section.txt'), md, null, true);
-  });
-}
 
 
 
