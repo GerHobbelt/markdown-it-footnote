@@ -1,6 +1,11 @@
 ------
 css: |
     <style>
+    /* WARNING: @media queries don't work with var(...): https://bholmes.dev/blog/alternative-to-css-variable-media-queries/ */
+    :root {
+      --aside-min-width: 53rem;
+    }    
+
     body {
         margin-left: 20em;
         max-width: 55em;
@@ -191,19 +196,21 @@ css: |
     }
 
     /* ... and then the real horror begins:  correcting floats for NESTED notes:  */
-    aside.footnotes aside.footnotes-category-aside {
-        margin-left: -24em;
-    }
-    aside.footnotes li aside.footnotes-category-aside {
-        margin-left: -26.5em;
-    }
-    /* ... and FLOATING sidenotes inside LISTS */
-    li aside.footnotes-category-aside {
-        margin-left: -22em;
-    }
-    /* ... and the error cases that are simply too much work otherwise: */
-    #fnsection-13 {
-        margin-left: -24em;
+    @media (min-width: 53rem) {
+        aside.footnotes aside.footnotes-category-aside {
+            margin-left: -24em;
+        }
+        aside.footnotes li aside.footnotes-category-aside {
+            margin-left: -26.5em;
+        }
+        /* ... and FLOATING sidenotes inside LISTS */
+        li aside.footnotes-category-aside {
+            margin-left: -22em;
+        }
+        /* ... and the error cases that are simply too much work otherwise: */
+        #fnsection-13 {
+            margin-left: -24em;
+        }
     }
 
     /* more legible footnote symbols */
@@ -217,6 +224,20 @@ css: |
     a.footnote-ref {
         font-weight: bold;
         text-decoration: none;
+    }
+
+
+    /* and move the ASIDE sidenotes IN-LINE when the screen isn't wide enough to easily facilitate them. */
+    @media (max-width: 53rem) {
+        aside.footnotes-category-aside {
+            float: none;
+            clear: none;
+
+            margin-left: auto;
+            width: auto;
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
     }
     </style>
 ------
@@ -491,6 +512,27 @@ Moet je d'r natuurlijk geen gewoonte van maken om bij het eerste beste obstakelt
 
 
 
+
+
+# Bunch of Citations 
+
+## Normative References
+
+[^CSS-CASCADE-5]:: Elika Etemad; Miriam Suzanne; Tab Atkins Jr.. CSS Cascading and Inheritance Level 5. 8 June 2021. WD. URL: https://www.w3.org/TR/css-cascade-5/
+
+[^CSS-CONDITIONAL-3]:: David Baron; Elika Etemad; Chris Lilley. CSS Conditional Rules Module Level 3. 8 December 2020. CR. URL: https://www.w3.org/TR/css-conditional-3/
+
+[^CSS-SYNTAX-3]:: Tab Atkins Jr.; Simon Sapin. CSS Syntax Module Level 3. 16 July 2019. CR. URL: https://www.w3.org/TR/css-syntax-3/
+
+[^CSS-VALUES-3]:: Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 3. 6 June 2019. CR. URL: https://www.w3.org/TR/css-values-3/
+
+[^CSS-VALUES-4]:: Tab Atkins Jr.; Elika Etemad. CSS Values and Units Module Level 4. 11 November 2020. WD. URL: https://www.w3.org/TR/css-values-4/
+
+[^CSS-VARIABLES-1]:: Tab Atkins Jr.. CSS Custom Properties for Cascading Variables Module Level 1. 3 December 2015. CR. URL: https://www.w3.org/TR/css-variables-1/
+
+[^DOM]:: Anne van Kesteren. DOM Standard. Living Standard. URL: https://dom.spec.whatwg.org/
+
+[^RFC2119]:: S. Bradner. Key words for use in RFCs to Indicate Requirement Levels. March 1997. Best Current Practice. URL: https://tools.ietf.org/html/rfc2119
 
 
 

@@ -3,9 +3,10 @@
 import { strict } from 'assert';
 
 // Process footnotes
-// Renderer partials
 
-function anchorFnDefault(n, excludeSubId, tokens, idx, options, env, slf) {
+function anchorFnDefault(n, excludeSubId, baseInfo) {
+  const env = baseInfo.env;
+  strict.ok(env != null);
   let prefix = '';
 
   if (typeof env.docId === 'string' && env.docId.length > 0) {
@@ -15,12 +16,12 @@ function anchorFnDefault(n, excludeSubId, tokens, idx, options, env, slf) {
   return prefix + n;
 }
 
-function captionFnDefault(n, tokens, idx, options, env, slf) {
+function captionFnDefault(n, baseInfo) {
   //return '[' + n + ']';
   return '' + n;
 }
 
-function headerFnDefault(state, category, env, plugin_options) {
+function headerFnDefault(category, baseInfo) {
   switch (category) {
     case 'aside':
       return 'Side Notes';
@@ -35,10 +36,12 @@ function headerFnDefault(state, category, env, plugin_options) {
   return '';
 }
 
-function determine_footnote_symbol(idx, info, env, plugin_options) {
-  // rule to construct the printed label:
+function determine_footnote_symbol(idx, info, baseInfo) {
+  const plugin_options = baseInfo.plugin_options;
+  strict.ok(plugin_options != null); // rule to construct the printed label:
   //
   //     mark = labelOverride  /* || info.label */  || idx;
+
   const label = info.labelOverride;
 
   if (label) {
@@ -76,25 +79,45 @@ function determine_footnote_symbol(idx, info, env, plugin_options) {
 
   return '' + plugin_options.numberSequence[idx];
 }
-/*
-ref:
-  return `<label aria-describedby="fn${id}" role="presentation" class="sidelink" for="fn${id}-content">
-<a aria-hidden="true" href="#fn${id}"><output class="highlight fnref" id="fnref${refid}">${caption}
-</output></a></label>`;
 
+const bunched_mode_classes = ['', 'footnote-bunched-ref-ref', 'footnote-bunched-ref-text'];
 
-open:
-  return `<aside id="fn${id}" class="sidenote" role="note">
-    <output aria-hidden="true" class="highlight" id="fn${id}-content">
-    <label role="presentation" for="fnref${id}">`;
+function generateFootnoteRefHtml(id, caption, refId, bunched_footnote_ref_mode, renderInfo) {
+  return `<a class="footnote-ref ${bunched_mode_classes[bunched_footnote_ref_mode]}" href="#fn${id}" id="fnref${refId}">${renderInfo.tokens[renderInfo.idx].meta.text || ''}<sup class="footnote-ref">${caption}</sup></a>` + (bunched_footnote_ref_mode !== 0 ? `<sup class="footnote-ref-combiner ${bunched_mode_classes[bunched_footnote_ref_mode]}">${renderInfo.plugin_options.refCombiner || ''}</sup>` : '');
 }
 
-function render_sidenote_close() {
-  return '</label></output></aside>\n';
+function generateFootnoteSectionStartHtml(renderInfo) {
+  const tok = renderInfo.tokens[renderInfo.idx];
+  strict(tok != null);
+  strict(tok.meta != null);
+  const header = tok.markup ? `<h3 class="footnotes-header">${tok.markup}</h3>` : '';
+  const category = tok.meta.category;
+  return `<hr class="footnotes-sep footnotes-category-${category}" id="fnsection-hr-${tok.meta.sectionId}"${renderInfo.options.xhtmlOut ? ' /' : ''}><aside class="footnotes footnotes-category-${category}" id="fnsection-${tok.meta.sectionId}">${header}<ul class="footnotes-list">\n`;
 }
 
-*/
+function generateFootnoteSectionEndHtml(renderInfo) {
+  return '</ul>\n</aside>\n';
+}
 
+function generateFootnoteStartHtml(id, caption, renderInfo) {
+  // allow both a JavaWScript --> CSS approach via `data-footnote-caption`
+  // and a classic CSS approach while a display:inline-block SUP presenting
+  // the LI 'button' instead:
+  return `<li tabindex="-1" id="fn${id}" class="footnote-item" data-footnote-caption="${caption}"><span class="footnote-caption"><sup class="footnote-caption">${caption}</sup></span><span class="footnote-content">`;
+}
+
+function generateFootnoteEndHtml(renderInfo) {
+  return '</span></li>\n';
+}
+
+function generateFootnoteBackRefHtml(id, refId, renderInfo) {
+  const tok = renderInfo.tokens[renderInfo.idx];
+  strict(tok != null);
+  strict(tok.meta != null);
+  /* ↩ with escape code to prevent display as Apple Emoji on iOS */
+
+  return ` <a href="#fnref${refId}" class="footnote-backref footnote-backref-${tok.meta.subId} footnote-backref-R${tok.meta.backrefCount - tok.meta.subId - 1}">\u21a9\uFE0E</a>`;
+}
 
 const default_plugin_options = {
   // atDocumentEnd: false,               -- obsoleted option of the original plugin
@@ -188,37 +211,43 @@ function footnote_plugin(md, plugin_options) {
     return n;
   }
 
-  function render_footnote_mark(tokens, idx, env) {
-    const token = tokens[idx];
+  function render_footnote_mark(renderInfo) {
+    const token = renderInfo.tokens[renderInfo.idx];
     strict.ok(token != null);
-    const info = env.footnotes.list[token.meta.id];
+    const info = renderInfo.env.footnotes.list[token.meta.id];
     strict.ok(info != null);
-    const mark = plugin_options.mkLabel(token.meta.id, info, env, plugin_options);
+    const mark = plugin_options.mkLabel(token.meta.id, info, renderInfo);
     strict.ok(mark.length > 0);
     return mark;
   }
 
-  function render_footnote_anchor_name(tokens, idx, options, env, slf) {
-    const n = render_footnote_n(tokens, idx, true);
-    return plugin_options.anchorFn(n, true, tokens, idx, options, env, slf);
+  function render_footnote_anchor_name(renderInfo) {
+    const n = render_footnote_n(renderInfo.tokens, renderInfo.idx, true);
+    return plugin_options.anchorFn(n, true, renderInfo);
   }
 
-  function render_footnote_anchor_nameRef(tokens, idx, options, env, slf) {
-    const n = render_footnote_n(tokens, idx, false);
-    return plugin_options.anchorFn(n, false, tokens, idx, options, env, slf);
+  function render_footnote_anchor_nameRef(renderInfo) {
+    const n = render_footnote_n(renderInfo.tokens, renderInfo.idx, false);
+    return plugin_options.anchorFn(n, false, renderInfo);
   }
 
-  function render_footnote_caption(tokens, idx, options, env, slf) {
-    const n = render_footnote_mark(tokens, idx, env);
-    return plugin_options.captionFn(n, tokens, idx, options, env, slf);
+  function render_footnote_caption(renderInfo) {
+    const n = render_footnote_mark(renderInfo);
+    return plugin_options.captionFn(n, renderInfo);
   }
 
-  const bunched_mode_classes = ['', 'footnote-bunched-ref-ref', 'footnote-bunched-ref-text'];
-
-  function render_footnote_ref(tokens, idx, options, env, slf) {
-    const id = render_footnote_anchor_name(tokens, idx, options, env, slf);
-    const caption = render_footnote_caption(tokens, idx, options, env, slf);
-    const refid = render_footnote_anchor_nameRef(tokens, idx, options, env, slf); // check if multiple footnote references are bunched together:
+  function render_footnote_ref(tokens, idx, options, env, self) {
+    const renderInfo = {
+      tokens,
+      idx,
+      options,
+      env,
+      plugin_options,
+      self
+    };
+    const id = render_footnote_anchor_name(renderInfo);
+    const caption = render_footnote_caption(renderInfo);
+    const refId = render_footnote_anchor_nameRef(renderInfo); // check if multiple footnote references are bunched together:
     // IFF they are, we should separate them with commas.
     //
     // Exception: when next token has an extra text (`meta.text`) the
@@ -234,23 +263,26 @@ function footnote_plugin(md, plugin_options) {
     const next_token = tokens[idx + 1] || {};
     const next_token_meta = next_token.meta || {};
     const bunched_footnote_ref_mode = next_token.type === 'footnote_ref' ? !next_token_meta.text ? 1 : 2 : 0;
-    return `<a class="footnote-ref ${bunched_mode_classes[bunched_footnote_ref_mode]}" href="#fn${id}" id="fnref${refid}">${tokens[idx].meta.text || ''}<sup class="footnote-ref">${caption}</sup></a>` + (bunched_footnote_ref_mode !== 0 ? `<sup class="footnote-ref-combiner ${bunched_mode_classes[bunched_footnote_ref_mode]}">${plugin_options.refCombiner}</sup>` : '');
+    return generateFootnoteRefHtml(id, caption, refId, bunched_footnote_ref_mode, renderInfo);
   }
 
-  function render_footnote_block_open(tokens, idx, options) {
-    const tok = tokens[idx];
-    strict(tok != null);
-    strict(tok.meta != null);
-    const header = tok.markup ? `<h3 class="footnotes-header">${tok.markup}</h3>` : '';
-    const category = tok.meta.category;
-    return `<hr class="footnotes-sep footnotes-category-${category}" id="fnsection-hr-${tok.meta.sectionId}"${options.xhtmlOut ? ' /' : ''}><aside class="footnotes footnotes-category-${category}" id="fnsection-${tok.meta.sectionId}">${header}<ul class="footnotes-list">\n`;
+  function render_footnote_block_open(tokens, idx, options, env, self) {
+    const renderInfo = {
+      tokens,
+      idx,
+      options,
+      env,
+      plugin_options,
+      self
+    };
+    return generateFootnoteSectionStartHtml(renderInfo);
   }
 
-  function render_footnote_block_close(tokens, idx, options) {
-    return '</ul>\n</aside>\n';
+  function render_footnote_block_close(tokens, idx, options, env, self) {
+    return generateFootnoteSectionEndHtml();
   }
 
-  function render_footnote_reference_open(tokens, idx, options) {
+  function render_footnote_reference_open(tokens, idx, options, env, self) {
     return '<!-- footnote reference start -->\n';
   }
 
@@ -262,28 +294,43 @@ function footnote_plugin(md, plugin_options) {
     return '<!-- footnote dump marker -->\n';
   }
 
-  function render_footnote_open(tokens, idx, options, env, slf) {
-    const id = render_footnote_anchor_name(tokens, idx, options, env, slf);
-    const caption = render_footnote_caption(tokens, idx, options, env, slf); // allow both a JavaWScript --> CSS approach via `data-footnote-caption`
+  function render_footnote_open(tokens, idx, options, env, self) {
+    const renderInfo = {
+      tokens,
+      idx,
+      options,
+      env,
+      plugin_options,
+      self
+    };
+    const id = render_footnote_anchor_name(renderInfo);
+    const caption = render_footnote_caption(renderInfo); // allow both a JavaScript --> CSS approach via `data-footnote-caption`
     // and a classic CSS approach while a display:inline-block SUP presenting
     // the LI 'button' instead:
 
-    return `<li tabindex="-1" id="fn${id}" class="footnote-item" data-footnote-caption="${caption}"><span class="footnote-caption"><sup class="footnote-caption">${caption}</sup></span><span class="footnote-content">`;
+    return generateFootnoteStartHtml(id, caption);
   }
 
-  function render_footnote_close() {
-    return '</span></li>\n';
+  function render_footnote_close(tokens, idx, options, env, self) {
+    return generateFootnoteEndHtml();
   }
 
-  function render_footnote_anchor_backref(tokens, idx, options, env, slf) {
+  function render_footnote_anchor_backref(tokens, idx, options, env, self) {
+    const renderInfo = {
+      tokens,
+      idx,
+      options,
+      env,
+      plugin_options,
+      self
+    };
     const tok = tokens[idx];
     strict(tok != null);
     strict(tok.meta != null);
-    let refid = render_footnote_n(tokens, idx, false);
-    refid = plugin_options.anchorFn(refid, false, tokens, idx, options, env, slf);
-    /* ↩ with escape code to prevent display as Apple Emoji on iOS */
-
-    return ` <a href="#fnref${refid}" class="footnote-backref footnote-backref-${tok.meta.subId} footnote-backref-R${tok.meta.backrefCount - tok.meta.subId - 1}">\u21a9\uFE0E</a>`;
+    const id = render_footnote_anchor_name(renderInfo);
+    let refId = render_footnote_n(tokens, idx, false);
+    refId = plugin_options.anchorFn(refId, false, renderInfo);
+    return generateFootnoteBackRefHtml(id, refId, renderInfo);
   }
 
   md.renderer.rules.footnote_ref = render_footnote_ref;
@@ -373,6 +420,7 @@ function footnote_plugin(md, plugin_options) {
       // 3: sorted alphanumerically by label (inline footnotes will end up at the top, before all other notes)
 
       case 3:
+      case 4:
         // just note the footnoteId now; this must be re-ordered later when we have collected all footnotes.
         //
         // set it up when we get there...
@@ -828,7 +876,7 @@ function footnote_plugin(md, plugin_options) {
     let inject_tokens = [];
     const foontnote_spec_list = state.env.footnotes.list;
     let token = new state.Token('footnote_block_open', '', 1);
-    token.markup = plugin_options.headerFn(state, category, state.env, plugin_options);
+    token.markup = plugin_options.headerFn(category, state.env, plugin_options);
     token.meta = {
       sectionId: ++state.env.footnotes.sectionCounter,
       category
@@ -871,7 +919,7 @@ function footnote_plugin(md, plugin_options) {
       const cnt = fn.count;
 
       if (cnt < 1) {
-        console.error(`footnote ID ${id} is defined but never used. Footnote will be removed from the output!`, fn);
+        console.error(`ERROR: footnote ID ${id} is defined but never used. Footnote will be removed from the output!`, fn);
         inject_tokens = inject_tokens.slice(0, inject_start_index);
       } else {
         for (let j = 0; j < cnt; j++) {
@@ -932,6 +980,12 @@ function footnote_plugin(md, plugin_options) {
     }
 
     const idMap = state.env.footnotes.idMap;
+    const baseInfo = {
+      options: state.md.options,
+      env: state.env,
+      plugin_options,
+      self: this
+    };
 
     function footnote_print_comparer(idA, idB) {
       return idMap[idA] - idMap[idB];
@@ -989,6 +1043,7 @@ function footnote_plugin(md, plugin_options) {
       // 3: sorted alphanumerically by label (inline footnotes will end up at the top, before all other notes)
 
       case 3:
+      case 4:
         // the `idMap[]` array has not been set up and must be produced
         // to turn this into an alphanumerically-by-label sort order, where
         // a `footnoteId` based index will produce the order of appearance.
@@ -1032,8 +1087,8 @@ function footnote_plugin(md, plugin_options) {
             };
           }
 
-          const labelA = infoA.labelOverride || infoA.label || '' + infoA.id;
-          const labelB = infoB.labelOverride || infoB.label || '' + infoB.id;
+          const labelA = plugin_options.sortOrder === 3 ? infoA.labelOverride || infoA.label || '' + infoA.id : plugin_options.mkLabel(infoA.id, infoA, baseInfo);
+          const labelB = plugin_options.sortOrder === 3 ? infoB.labelOverride || infoB.label || '' + infoB.id : plugin_options.mkLabel(infoB.id, infoB, baseInfo);
           const atomA = to_atoms(labelA);
           const atomB = to_atoms(labelB);
           const diff = atomA.number - atomB.number;
@@ -1041,25 +1096,26 @@ function footnote_plugin(md, plugin_options) {
           //
           // if (isNaN(diff) || diff === 0) then stringcompare else numeric-difference
         });
-        console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map(idx => {
+        /*
+        console.error('$$$$$$$$$$$$$$$$ sort order map: $$$$$$$$$$$$$$', reIdMap.map((idx) => {
           const info = list[idx];
           if (!info) return '---';
-          strict.ok(info.id === idx);
+          assert.ok(info.id === idx);
           return {
             idx,
-            compareLabel: info.labelOverride
-            /* || info.label */
-            || '' + info.id,
+            compareLabel: info.labelOverride /* || info.label *)/ || ('' + info.id),
             info
           };
-        }), reIdMap); // Now turn this into a sort order map:
+        }), reIdMap);
+        */
+        // Now turn this into a sort order map:
 
         for (let prio = 0; prio < reIdMap.length; prio++) {
           const id = reIdMap[prio];
           idMap[id] = prio;
-        }
+        } //console.error('@@@@@@@@@@@@@@@@@', idMap);
 
-        console.error('@@@@@@@@@@@@@@@@@', idMap);
+
         break;
     }
 
@@ -1154,15 +1210,11 @@ function footnote_plugin(md, plugin_options) {
 
       for (const id of end_list.values()) {
         end_ids.push(id);
-      }
+      } //console.error('@@@@@@@@@@@@@@ ', { end_ids });
 
-      console.error('@@@@@@@@@@@@@@ ', {
-        end_ids
-      });
-      end_ids.sort(footnote_print_comparer);
-      console.error('@@@@@@@@@@@@@@ after sort', {
-        end_ids
-      });
+
+      end_ids.sort(footnote_print_comparer); //console.error('@@@@@@@@@@@@@@ after sort', { end_ids });
+
       place_footnote_definitions_at(state, tokens.length, end_ids, 'end'); //tokens = state.tokens;
     } // Update state_block too as we have rewritten & REPLACED the token array earlier in this call:
     // the reference `state.env.state_block.tokens` is still pointing to the OLD token array!
