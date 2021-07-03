@@ -32,6 +32,8 @@ jobs:
           install-yarn: false
       - run: node --version
       - run: make prep-ci
-      - run: npm run build --if-present
-      - run: npm test
-      - run: make report-coverage
+      #- run: npm run build --if-present
+      - run: npm run build
+      # ^^^^^^^^ The build command includes all tests and code coverage run:
+      #- run: npm test
+      #- run: make report-coverage
