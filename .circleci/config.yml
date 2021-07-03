@@ -20,15 +20,17 @@ workflows:
 jobs:
   test:
     parameters:
-      os:
-        type: executor
-      node-version:
+      version:
         type: string
-    executor: << parameters.os >>
+    # https://circleci.com/developer/orbs/orb/circleci/node
+    docker:
+      - image: 'cimg/base:stable'
     steps:
       - checkout
       - node/install:
-          node-version: << parameters.node-version >>
+          node-version: << parameters.version >>
+          install-yarn: false
+      - run: node --version
       - run: make prep-ci
       - run: npm run build --if-present
       - run: npm test
