@@ -18,10 +18,10 @@ GITHUB_PROJ := https://github.com//GerHobbelt/${NPM_PACKAGE}
 build: report-config lintfix bundle test coverage todo
 
 lint:
-	eslint . --ext .js,.ts
+	npx eslint . --ext .js,.ts
 
 lintfix:
-	eslint --fix . --ext .js,.ts
+	npx eslint --fix . --ext .js,.ts
 
 bundle:
 	-rm -rf ./dist
