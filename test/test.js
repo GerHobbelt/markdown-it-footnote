@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import plugin from '../dist/markdownitFootnote.js';
+import plugin from '../dist/markdownItFootnote.modern.js';
 
 function N(n) {
   const rv = '00000' + n;

@@ -12,8 +12,12 @@
   "license": "MIT",
   "type": "module",
   "source": "index.ts",
-  "main": "dist/markdownItFootnote.js",
-  "types": "dist/markdownItFootnote.d.ts",
+  "main": "./dist/markdownItFootnote.cjs",
+  "module": "./dist/markdownItFootnote.mjs",
+  "exports": "./dist/markdownItFootnote.modern.js",
+  "unpkg": "./dist/markdownItFootnote.umd.js",
+  "umd:main": "./dist/markdownItFootnote.umd.js",
+  "types": "./dist/markdownItFootnote.d.ts",
   "engines": {
     "node": ">=12.21"
   },
@@ -40,9 +44,9 @@
     "@typescript-eslint/parser": "4.28.1",
     "argparse": "2.0.1",
     "cross-env": "7.0.3",
-    "eslint": "7.29.0",
+    "eslint": "7.30.0",
     "microbundle": "0.13.3",
-    "mocha": "9.0.1",
+    "mocha": "9.0.2",
     "nyc": "15.1.0"
   },
   "reporter": [

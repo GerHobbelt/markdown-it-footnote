@@ -26,9 +26,7 @@ lintfix:
 bundle:
 	-rm -rf ./dist
 	mkdir dist
-	microbundle --no-compress --target node --strict --name ${GLOBAL_NAME} -f modern
-	mv dist/${BUNDLE_NAME}.modern.js dist/${BUNDLE_NAME}.js
-	mv dist/${BUNDLE_NAME}.modern.js.map dist/${BUNDLE_NAME}.js.map
+	microbundle --no-compress --target node --strict --name ${GLOBAL_NAME}
 	npx prepend-header 'dist/*js' support/header.js
 
 test:
