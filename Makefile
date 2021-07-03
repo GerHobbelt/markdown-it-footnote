@@ -94,4 +94,4 @@ report-config:
 
 
 .PHONY: clean superclean prep prep-ci report-config publish lint lintfix test todo coverage report-coverage doc build gh-doc bundle
-.SILENT: help lint test todo
+.SILENT: help lint test todo report-config
