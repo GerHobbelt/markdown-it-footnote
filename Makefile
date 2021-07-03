@@ -63,7 +63,7 @@ todo:
 	@echo ""
 	grep 'TODO' -n -r ./ --exclude-dir=node_modules --exclude-dir=unicode-homographs --exclude-dir=.nyc_output --exclude-dir=dist --exclude-dir=coverage --exclude=Makefile 2>/dev/null || test true
 
-clean:
+clean: report-config
 	-rm -rf ./coverage/
 	-rm -rf ./dist/
 	-rm -rf ./.nyc_output/
