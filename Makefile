@@ -80,7 +80,8 @@ prep: superclean
 
 prep-ci: clean
 	-rm -rf ./node_modules/
-	-npm ci
+	-rm package-lock.json
+	-npm install
 	-npm prune
 	-npm audit fix
 	-npx mocha --version
