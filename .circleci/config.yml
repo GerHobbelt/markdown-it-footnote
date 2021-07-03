@@ -34,4 +34,4 @@ jobs:
       - run: make prep-ci
       - run: npm run build --if-present
       - run: npm test
-      - run: npm report-coverage
+      - run: make report-coverage

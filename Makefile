@@ -80,8 +80,9 @@ prep: superclean
 
 prep-ci: clean
 	-rm -rf ./node_modules/
+	# HACK to allow CI to pass the npm install phase (crash due to minimatch SHA failure **WTF?!**)
 	-rm package-lock.json
-	-npm install
+	-npm ci
 	-npm prune
 	-npm audit fix
 	-npx mocha --version
