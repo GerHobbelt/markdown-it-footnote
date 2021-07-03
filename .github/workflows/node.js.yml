@@ -16,11 +16,15 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [12, 14, 16]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+      run: git checkout master
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:

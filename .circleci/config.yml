@@ -6,13 +6,30 @@ orbs:
   # See the orb's test job here: https://circleci.com/developer/orbs/orb/circleci/node#jobs-test
 
 workflows:
-  sample:
+  the_one:
     jobs:
-      - node/test:
+      - test:
           matrix:
             parameters:
-              version: ['15.1', 'lts', '12.21']
+              version: ['16', '14', 'lts', '12']
           # For more information about matrix testing see the detailed blog post:
           # https://circleci.com/blog/circleci-matrix-jobs/
           # or the configuration reference:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#matrix-requires-version-21
+
+jobs:
+  test:
+    parameters:
+      os:
+        type: executor
+      node-version:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - node/install:
+          node-version: << parameters.node-version >>
+      - run: make prep-ci
+      - run: npm run build --if-present
+      - run: npm test
+      - run: npm report-coverage
