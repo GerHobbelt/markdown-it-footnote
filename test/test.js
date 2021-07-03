@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 
 import plugin from '../dist/markdownItFootnote.modern.js';
 
+
+
 function N(n) {
   const rv = '00000' + n;
   return rv.slice(rv.length - 4);
