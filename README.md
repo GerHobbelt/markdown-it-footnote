@@ -1,6 +1,7 @@
 # markdown-it-footnote
 
-[![Build Status](https://img.shields.io/travis/GerHobbelt/markdown-it-footnote/master.svg?style=flat)](https://travis-ci.org/GerHobbelt/markdown-it-footnote)
+[![Node.js CI](https://github.com/GerHobbelt/markdown-it-footnote/actions/workflows/node.js.yml/badge.svg)](https://github.com/GerHobbelt/markdown-it-footnote/actions/workflows/node.js.yml)
+![CircleCI](https://img.shields.io/circleci/build/github/GerHobbelt/markdown-it-footnote)
 [![NPM version](https://img.shields.io/npm/v/@gerhobbelt/markdown-it-footnote.svg?style=flat)](https://www.npmjs.org/package/@gerhobbelt/markdown-it-footnote)
 [![Coverage Status](https://img.shields.io/coveralls/GerHobbelt/markdown-it-footnote/master.svg?style=flat)](https://coveralls.io/r/GerHobbelt/markdown-it-footnote?branch=master)
 
