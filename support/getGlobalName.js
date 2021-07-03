@@ -57,4 +57,12 @@ Choices:
   }
 }
 
-await action();
+
+// https://stackoverflow.com/questions/46515764/how-can-i-use-async-await-at-the-top-level
+// 
+// Cannot do simple `await action()` because we still support v12... sort of...
+(async () => {
+    await action();
+})().catch(ex => {
+    console.error(ex);
+});
