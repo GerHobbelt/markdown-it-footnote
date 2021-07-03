@@ -26,16 +26,16 @@ lintfix:
 bundle:
 	-rm -rf ./dist
 	mkdir dist
-	microbundle --no-compress --target node --strict --name ${GLOBAL_NAME}
+	npx microbundle --no-compress --target node --strict --name ${GLOBAL_NAME}
 	npx prepend-header 'dist/*js' support/header.js
 
 test:
-	mocha
+	npx mocha
 
 coverage:
 	-rm -rf coverage
 	-rm -rf .nyc_output
-	cross-env NODE_ENV=test nyc mocha
+	npx cross-env NODE_ENV=test nyc mocha
 
 report-coverage: lint coverage
 
@@ -83,7 +83,7 @@ prep-ci: clean
 	-npm ci
 	-npm prune
 	-npm audit fix
-	-mocha --version
+	-npx mocha --version
 	-node --version
 
 report-config:
