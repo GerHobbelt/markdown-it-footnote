@@ -18,24 +18,24 @@ GITHUB_PROJ := https://github.com//GerHobbelt/${NPM_PACKAGE}
 build: report-config lintfix bundle test coverage todo
 
 lint:
-	npx eslint . --ext .js,.ts
+	eslint . --ext .js,.ts
 
 lintfix:
-	npx eslint --fix . --ext .js,.ts
+	eslint --fix . --ext .js,.ts
 
 bundle:
 	-rm -rf ./dist
 	mkdir dist
-	npx microbundle --no-compress --target node --strict --name ${GLOBAL_NAME}
+	microbundle --no-compress --target node --strict --name ${GLOBAL_NAME}
 	npx prepend-header 'dist/*js' support/header.js
 
 test:
-	npx mocha
+	mocha
 
 coverage:
 	-rm -rf coverage
 	-rm -rf .nyc_output
-	npx cross-env NODE_ENV=test nyc mocha
+	cross-env NODE_ENV=test nyc mocha
 
 report-coverage: lint coverage
 
@@ -86,7 +86,7 @@ prep-ci: clean
 	-npm install
 	-npm prune
 	-npm audit fix
-	-npx mocha --version
+	-mocha --version
 	-node --version
 
 report-config:
