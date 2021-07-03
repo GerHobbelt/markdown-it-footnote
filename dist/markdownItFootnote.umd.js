@@ -1,4 +1,4 @@
-/*! markdown-it-footnote 3.0.3-11 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
+/*! markdown-it-footnote 3.0.3-12 https://github.com//GerHobbelt/markdown-it-footnote @license MIT */
 
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('assert')) :
